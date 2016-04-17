@@ -89,7 +89,9 @@ app.post('/callback', function(req, res){
                         search_result['opentime'] = body.rest.opentime;
                     }
 
-                    callback(null, json, search_result);
+                    console.log("kani::: "+search_result);
+
+                    callback(null, json, JSON.stringify(search_result));
 
                 } else {
                     console.log('error: '+ response.statusCode);
@@ -101,6 +103,17 @@ app.post('/callback', function(req, res){
 
     // LINE BOT
     function(err, json, search_result) {
+        
+        /**
+            Channel ID	1462711706
+            Channel Secret	24ecda1e2b24046deece10e898598656
+            MID	u26007ded3fdd07309ee6eb814737d94b
+            Name	かにーぼったー
+            Application type	
+            TRIAL_BOT
+         * 
+         */
+        
         if(err){
             return;
         }
@@ -150,6 +163,8 @@ app.post('/callback', function(req, res){
                 ]
             }
         };
+        
+        console.log("kani::: data= "+ JSON.stringify(data));
 
         //オプションを定義
         var options = {
