@@ -34,6 +34,8 @@ app.post('/callback', function(req, res){
                 gnavi_keyword = keyword_array.join();
             }
 
+            console.log("kani::: place="+search_place+"/key="+gnavi_keyword);
+
             // ぐるなびAPI レストラン検索API
             var gnavi_url = 'http://api.gnavi.co.jp/RestSearchAPI/20150630/';
             // ぐるなび リクエストパラメータの設定
