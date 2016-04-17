@@ -89,9 +89,9 @@ app.post('/callback', function(req, res){
                         search_result['opentime'] = body.rest.opentime;
                     }
 
-                    console.log("kani::: "+search_result);
+                    console.log("kani::: "+JSON.stringify(search_result));
 
-                    callback(null, json, JSON.stringify(search_result));
+                    callback(null, json, search_result);
 
                 } else {
                     console.log('error: '+ response.statusCode);
