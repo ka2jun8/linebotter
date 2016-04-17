@@ -21,6 +21,8 @@ app.post('/callback', function(req, res){
 
             var json = req.body;
 
+            console.log("kani::: "+JSON.stringify(json));
+
             // 受信テキスト
             var search_place = json['result'][0]['content']['text'];
             var search_place_array = search_place.split("\n");
