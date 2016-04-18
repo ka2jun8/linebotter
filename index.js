@@ -120,6 +120,7 @@ app.post('/callback', function(req, res){
          * 
          */
         
+        /*
         if(err){
             return;
         }
@@ -189,6 +190,7 @@ app.post('/callback', function(req, res){
             }
         });
 
+        */
     });
 
 });
