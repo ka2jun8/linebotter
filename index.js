@@ -44,9 +44,12 @@ app.post('/callback', function(req, res){
 
             // ぐるなびAPI レストラン検索API
             var gnavi_url = 'http://api.gnavi.co.jp/RestSearchAPI/20150630/';
+
+            console.log("gnavi = "+process.env.GNAVI_KEY);
+
             // ぐるなび リクエストパラメータの設定
             var gnavi_query = {
-                "keyid":"4a7c20a4fd3707b545f724d9425e0396",
+                "keyid": process.env.GNAVI_KEY,
                 "format": "json",
                 "address": search_place_array[0],
                 "hit_per_page": 1,
@@ -109,17 +112,7 @@ app.post('/callback', function(req, res){
 
     // LINE BOT
     function(err, json, search_result) {
-        
-        /**
-            Channel ID	1462711706
-            Channel Secret	24ecda1e2b24046deece10e898598656
-            MID	u26007ded3fdd07309ee6eb814737d94b
-            Name	かにーぼったー
-            Application type	
-            TRIAL_BOT
-         * 
-         */
-        
+                
         /*
         if(err){
             return;
@@ -128,9 +121,9 @@ app.post('/callback', function(req, res){
         //ヘッダーを定義
         var headers = {
             'Content-Type' : 'application/json; charset=UTF-8',
-            'X-Line-ChannelID' : '1462711706',
-            'X-Line-ChannelSecret' : '24ecda1e2b24046deece10e898598656',
-            'X-Line-Trusted-User-With-ACL' : 'u26007ded3fdd07309ee6eb814737d94b'
+            'X-Line-ChannelID' : process.env.LINE_CHANNELID, 
+            'X-Line-ChannelSecret' : process.env.LINE_SECRET, 
+            'X-Line-Trusted-User-With-ACL' : process.env.LINE_MID 
         };
 
         // 送信相手の設定（配列）
@@ -172,7 +165,8 @@ app.post('/callback', function(req, res){
         };
         
         console.log("kani::: data= "+ JSON.stringify(data));
-
+        console.log("proxy-url : "+process.env.FIXIE_URL);
+        
         //オプションを定義
         var options = {
             url: 'https://trialbot-api.line.me/v1/events',
@@ -193,7 +187,6 @@ app.post('/callback', function(req, res){
         */
         
         res.send(search_result);
-
     });
 
 });
