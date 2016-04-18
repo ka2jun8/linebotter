@@ -12,11 +12,11 @@ app.use(bodyParser.json());                        // JSONのパースを楽に�
 
 //test
 app.get('/', function(request, response) {
-    console.log("kani::: "+request);
+    console.log("kani::: "+JSON.stringify(request));
     response.send('Hello World!');
 });
 app.post('/', function(request, response) {
-    console.log("kani::: "+request);
+    console.log("kani::: "+JSON.stringify(request));
     response.send('Hello World!');
 });
 
