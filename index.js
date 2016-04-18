@@ -9,9 +9,15 @@ var async = require('async');
 app.set('port', (process.env.PORT || 5000));
 app.use(bodyParser.urlencoded({extended: true}));  // JSONの送信を許可
 app.use(bodyParser.json());                        // JSONのパースを楽に（受信時）
-// app.get('/', function(request, response) {
-//     response.send('Hello World!');
-// });
+
+//test
+app.get('/callback', function(request, response) {
+    response.send('Hello World!');
+});
+app.post('/callback/callback', function(request, response) {
+    response.send('Hello World!');
+});
+
 
 app.post('/callback', function(req, res){
 
