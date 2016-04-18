@@ -20,6 +20,10 @@ app.post('/', function(req, res) {
     res.send('Hello World!');
 });
 
+app.get('/callback', function(req, res) {
+    console.log("kani::: "+JSON.stringify(req.body));
+    res.send('Hello World!');
+});
 
 app.post('/callback', function(req, res){
 
