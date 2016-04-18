@@ -11,10 +11,10 @@ app.use(bodyParser.urlencoded({extended: true}));  // JSONの送信を許可
 app.use(bodyParser.json());                        // JSONのパースを楽に（受信時）
 
 //test
-app.get('/callback', function(request, response) {
+app.get('/', function(request, response) {
     response.send('Hello World!');
 });
-app.post('/callback/callback', function(request, response) {
+app.post('/', function(request, response) {
     response.send('Hello World!');
 });
 
