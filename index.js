@@ -11,12 +11,12 @@ app.use(bodyParser.urlencoded({extended: true}));  // JSONの送信を許可
 app.use(bodyParser.json());                        // JSONのパースを楽に（受信時）
 
 //test
-app.get('/', function(request, response) {
-    console.log("kani::: "+JSON.stringify(request));
+app.get('/', function(req, res) {
+    console.log("kani::: "+JSON.stringify(req.body));
     response.send('Hello World!');
 });
-app.post('/', function(request, response) {
-    console.log("kani::: "+JSON.stringify(request));
+app.post('/', function(req, res) {
+    console.log("kani::: "+JSON.stringify(req.body));
     response.send('Hello World!');
 });
 
