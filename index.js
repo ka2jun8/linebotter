@@ -192,7 +192,7 @@ app.post('/callback', function(req, res){
 
         */
         
-        response.send(search_result);
+        res.send(search_result);
 
     });
 
