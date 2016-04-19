@@ -166,7 +166,7 @@ app.post('/', function(req, res) {
         //オプションを定義
         var options = {
             url: 'https://trialbot-api.line.me/v1/events',
-            proxy : process.env.FIXIE_URL,
+            //proxy : process.env.FIXIE_URL,
             headers: headers,
             json: true,
             body: data
@@ -338,7 +338,7 @@ app.post('/callback', function(req, res){
         //オプションを定義
         var options = {
             url: 'https://trialbot-api.line.me/v1/events',
-            proxy : process.env.FIXIE_URL,
+            //proxy : process.env.FIXIE_URL,
             headers: headers,
             json: true,
             body: data
