@@ -179,6 +179,7 @@ app.post('/', function(req, res) {
                 console.log('error: '+ JSON.stringify(response));
             }
         });
+    });
 });
 
 
