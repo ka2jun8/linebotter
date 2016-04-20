@@ -31,7 +31,7 @@ app.post('/', function(req, res) {
             var json = req.body;
             console.log('kani::: ' + JSON.stringify(json));
             
-            let text = json['result'][0]['content']['text'];
+            var text = json['result'][0]['content']['text'];
 
             // 受信テキスト
             var search_word_array = text.split('\n');
@@ -74,7 +74,7 @@ app.post('/callback', function(req, res){
             var json = req.body;
             console.log('kani::: ' + JSON.stringify(json));
             
-            let text = json['result'][0]['content']['text'];
+            var text = json['result'][0]['content']['text'];
 
             // 受信テキスト
             var search_word_array = text.split('\n');
