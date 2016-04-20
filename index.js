@@ -15,6 +15,12 @@ app.get('/', function(req, res) {
     console.log("kani::: "+JSON.stringify(req.body));
     res.send('Hello World!');
 });
+
+app.get('/logs', function(req, res) {
+    console.log("kani::: logs.");
+    res.redirect(302, "http://localhost:1234");
+});
+
 app.post('/', function(req, res) {
     console.log("kani::: "+JSON.stringify(req.body));
 
