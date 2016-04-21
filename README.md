@@ -1,3 +1,28 @@
+# Line-botter
+
+lineの秘書bot
+
+開発時
+```js
+npm install
+gulp
+```
+
+実行時
+```js
+nf start
+```
+
+ローカル環境でテストするときは、以下を叩く
+
+http://localhost:5000
+
+AWS(aws.ka2jun8.xyz:443)で起動予定
+
+
+
+==== fetch前
+
 # node-js-getting-started
 
 A barebones Node.js app using [Express 4](http://expressjs.com/).
