@@ -72,7 +72,7 @@ app.post('/callback', function(req, res){
         // ぐるなびAPI
         function(callback) {
             var json = req.body;
-            console.log('kani::: ' + JSON.stringify(json));
+            //console.log('kani::: ' + JSON.stringify(json));
             
             var text = json['result'][0]['content']['text'];
 
