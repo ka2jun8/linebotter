@@ -44,7 +44,7 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	//ぐるなび＋Line bot
+	/* WEBPACK VAR INJECTION */(function(__dirname) {//ぐるなび＋Line bot
 
 	var express = __webpack_require__(1);
 	var app = express();
@@ -53,14 +53,18 @@
 	var Grnavi = __webpack_require__(4);
 	var Linebot = __webpack_require__(6);
 
-	app.set('port', process.env.PORT || 3000);
+	app.set('port', process.env.PORT || 5000);
 	app.use(bodyParser.urlencoded({ extended: true })); // JSONの送信を許可
 	app.use(bodyParser.json()); // JSONのパースを楽に（受信時）
+	app.use(express.static('public'));
 
 	//test
 	app.get('/', function (req, res) {
 	    console.log('kani::: ' + JSON.stringify(req.body));
-	    res.send('Hello World!');
+	    //res.send('Hello World!');
+	    console.log(__dirname + 'index.html');
+	    //path.join(__dirname, 'index.html');
+	    res.sendFile(__dirname + 'index.html');
 	});
 
 	app.get('/logs', function (req, res) {
@@ -144,6 +148,7 @@
 	app.listen(app.get('port'), function () {
 	    console.log('Node app is running');
 	});
+	/* WEBPACK VAR INJECTION */}.call(exports, "/"))
 
 /***/ },
 /* 1 */
@@ -186,6 +191,7 @@
 	    };
 	    var gnavi_options = {
 	        url: gnavi_url,
+	        //proxy: process.env.PROXY,
 	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
 	        qs: gnavi_query,
 	        json: true
@@ -193,6 +199,8 @@
 
 	    // 検索結果をオブジェクト化
 	    var search_result = {};
+
+	    //console.log('proxy='+process.env.PROXY);
 
 	    request.get(gnavi_options, function (error, response, body) {
 	        if (!error && response.statusCode == 200) {
@@ -305,7 +313,7 @@
 	    //オプションを定義
 	    var options = {
 	        url: 'https://trialbot-api.line.me/v1/events',
-	        //proxy : process.env.FIXIE_URL,
+	        //proxy : process.env.PROXY,
 	        headers: headers,
 	        json: true,
 	        body: data

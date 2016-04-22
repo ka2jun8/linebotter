@@ -17,6 +17,7 @@ function grnavi(place, keyword, json, callback) {
     };
     var gnavi_options = {
         url: gnavi_url,
+        //proxy: process.env.PROXY,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         qs: gnavi_query,
         json: true
@@ -25,6 +26,8 @@ function grnavi(place, keyword, json, callback) {
     // 検索結果をオブジェクト化
     var search_result = {};
 
+    //console.log('proxy='+process.env.PROXY);
+    
     request.get(gnavi_options, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             if ('error' in body) {

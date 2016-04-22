@@ -7,14 +7,18 @@ var async = require('async');
 var Grnavi = require('./grnavi');
 var Linebot = require('./linebot');
 
-app.set('port', (process.env.PORT || 3000));
+app.set('port', (process.env.PORT || 5000));
 app.use(bodyParser.urlencoded({extended: true}));  // JSONの送信を許可
 app.use(bodyParser.json());                        // JSONのパースを楽に（受信時）
+app.use(express.static('public'));
 
 //test
 app.get('/', function(req, res) {
     console.log('kani::: '+JSON.stringify(req.body));
-    res.send('Hello World!');
+    //res.send('Hello World!');
+    console.log(__dirname+'index.html');
+    //path.join(__dirname, 'index.html');
+    res.sendFile(__dirname+'index.html');
 });
 
 app.get('/logs', function(req, res) {

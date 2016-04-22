@@ -57,7 +57,7 @@ function linebot(err, json, search_result) {
     //オプションを定義
     var options = {
         url: 'https://trialbot-api.line.me/v1/events',
-        //proxy : process.env.FIXIE_URL,
+        //proxy : process.env.PROXY,
         headers: headers,
         json: true,
         body: data
