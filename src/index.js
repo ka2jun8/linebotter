@@ -7,6 +7,9 @@ var async = require('async');
 var Grnavi = require('./grnavi');
 var Linebot = require('./linebot');
 
+var http = require('http').Server(app);
+var io = require('socket.io')(http);
+
 app.set('port', (process.env.PORT || 5000));
 app.use(bodyParser.urlencoded({extended: true}));  // JSONの送信を許可
 app.use(bodyParser.json());                        // JSONのパースを楽に（受信時）
@@ -17,8 +20,14 @@ app.get('/', function(req, res) {
     console.log('kani::: '+JSON.stringify(req.body));
     //res.send('Hello World!');
     console.log(__dirname+'index.html');
-    //path.join(__dirname, 'index.html');
     res.sendFile(__dirname+'index.html');
+});
+
+//socket.io
+io.on('connection', function(socket){
+    socket.on('chat message', function(msg){
+        console.log('message: ' + msg);
+    });
 });
 
 app.get('/logs', function(req, res) {

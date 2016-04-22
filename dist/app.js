@@ -53,6 +53,9 @@
 	var Grnavi = __webpack_require__(4);
 	var Linebot = __webpack_require__(6);
 
+	var http = __webpack_require__(7).Server(app);
+	var io = __webpack_require__(8)(http);
+
 	app.set('port', process.env.PORT || 5000);
 	app.use(bodyParser.urlencoded({ extended: true })); // JSONの送信を許可
 	app.use(bodyParser.json()); // JSONのパースを楽に（受信時）
@@ -63,8 +66,14 @@
 	    console.log('kani::: ' + JSON.stringify(req.body));
 	    //res.send('Hello World!');
 	    console.log(__dirname + 'index.html');
-	    //path.join(__dirname, 'index.html');
 	    res.sendFile(__dirname + 'index.html');
+	});
+
+	//socket.io
+	io.on('connection', function (socket) {
+	    socket.on('chat message', function (msg) {
+	        console.log('message: ' + msg);
+	    });
 	});
 
 	app.get('/logs', function (req, res) {
@@ -329,6 +338,18 @@
 	}
 
 	module.exports = linebot;
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	module.exports = require("http");
+
+/***/ },
+/* 8 */
+/***/ function(module, exports) {
+
+	module.exports = require("socket.io");
 
 /***/ }
 /******/ ]);
