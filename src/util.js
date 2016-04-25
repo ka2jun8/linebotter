@@ -1,3 +1,5 @@
+
+//TODO typeとsubtypeを用意しよう
 const Util = {
     TALKTYPE : {
         OTHER: '0',

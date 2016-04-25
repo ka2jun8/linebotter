@@ -9,8 +9,7 @@ function parser(args) {
 
     //yahoo 形態素解析web api
     const url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
-    //console.log('yparser = ' + process.env.YAPPID);
-    //console.log("text="+args.text);
+    logger.log(logger.type.INFO, 'yahooid: ' + process.env.YAPPID);
 
     // リクエストパラメータの設定
     const query = {
@@ -19,7 +18,7 @@ function parser(args) {
     };
     const options = {
         url: url,
-        proxy: process.env.PROXY,
+        //proxy: process.env.PROXY,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         qs: query,
         json: true
@@ -63,19 +62,20 @@ function parser(args) {
             else if(type==Util.TALKTYPE.OTHER){ //0
                 //console.log('type other');
                 words.map((word)=>{
+                    logger.log(logger.type.INFO, type+':'+word);
                     if(word.reading==='ごはん'){
                         type = Util.TALKTYPE.GROUMET;
                     }
-                    else if('おはよう' in word.reading){
+                    else if(word.reading.indexOf('おはよう')!=-1){
                         type = Util.TALKTYPE.OHA;
                     }
-                    else if('こんにち' in word.reading){
+                    else if(word.reading.indexOf('こんにち')!=-1){
                         type = Util.TALKTYPE.KONNICHIWA;
                     }
-                    else if('こんばん' in word.reading){
+                    else if(word.reading.indexOf('こんばん')!=-1){
                         type = Util.TALKTYPE.KONBANWA;
                     }
-                    else if(word.reading==='かに'){
+                    else{
                         type = Util.TALKTYPE.OTHER;
                     }
                 });

@@ -100,12 +100,11 @@
 	        var to_array = [];
 	        var to = json['result'][0]['content']['from'];
 	        to_array.push(to);
-	        console.log('Line to:' + to);
 
 	        //受信メッセージ
 	        var text = json['result'][0]['content']['text'];
 
-	        logger.log(logger.type.INFO, '[' + to + ']' + text);
+	        logger.log(logger.type.INFO, 'Line=>(' + to + '):' + text);
 
 	        //redis接続
 	        client.on('error', function (err) {
@@ -183,9 +182,7 @@
 
 	    //yahoo 形態素解析web api
 	    var url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
-
-	    //console.log('yparser = ' + process.env.YAPPID);
-	    //console.log("text="+args.text);
+	    logger.log(logger.type.INFO, 'yahooid: ' + process.env.YAPPID);
 
 	    // リクエストパラメータの設定
 	    var query = {
@@ -194,7 +191,7 @@
 	    };
 	    var options = {
 	        url: url,
-	        proxy: process.env.PROXY,
+	        //proxy: process.env.PROXY,
 	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
 	        qs: query,
 	        json: true
@@ -225,9 +222,9 @@
 	                type = reply;
 	            }
 	            if (type == Util.TALKTYPE.GROUMET) {
-	                //1
+	                //2
 	                //console.log('type groumet');
-	                type = Util.TALKTYPE.GROUMET_SEARCH; //2
+	                type = Util.TALKTYPE.GROUMET_SEARCH; //2-1
 
 	                words.map(function (word) {
 	                    if (word.pos === '名詞') {
@@ -238,10 +235,16 @@
 	                //0
 	                //console.log('type other');
 	                words.map(function (word) {
-	                    console.log(word);
+	                    logger.log(logger.type.INFO, type + ':' + word);
 	                    if (word.reading === 'ごはん') {
 	                        type = Util.TALKTYPE.GROUMET;
-	                    } else if (word.reading === 'かに') {
+	                    } else if (word.reading.indexOf('おはよう') != -1) {
+	                        type = Util.TALKTYPE.OHA;
+	                    } else if (word.reading.indexOf('こんにち') != -1) {
+	                        type = Util.TALKTYPE.KONNICHIWA;
+	                    } else if (word.reading.indexOf('こんばん') != -1) {
+	                        type = Util.TALKTYPE.KONBANWA;
+	                    } else {
 	                        type = Util.TALKTYPE.OTHER;
 	                    }
 	                });
@@ -297,14 +300,18 @@
 /* 8 */
 /***/ function(module, exports) {
 
-	"use strict";
+	'use strict';
 
+	//TODO typeとsubtypeを用意しよう
 	var Util = {
 	    TALKTYPE: {
-	        OTHER: 0,
-	        GROUMET: 1,
-	        GROUMET_SEARCH: 2,
-	        ERROR: -1
+	        OTHER: '0',
+	        OHA: '1-1',
+	        KONNICHIWA: '1-2',
+	        KONBANWA: '1-3',
+	        GROUMET: '2',
+	        GROUMET_SEARCH: '2-1',
+	        ERROR: '-1'
 	    }
 	};
 
@@ -339,14 +346,9 @@
 	'use strict';
 
 	var request = __webpack_require__(5);
+	var logger = __webpack_require__(9);
 
 	function linebot(to_array, message) {
-	    /*
-	    if(err){
-	        return;
-	    }
-	    */
-
 	    //ヘッダーを定義
 	    var headers = {
 	        'Content-Type': 'application/json; charset=UTF-8',
@@ -366,13 +368,12 @@
 	        }
 	    };
 
-	    console.log('kani::: data= ' + JSON.stringify(data));
-	    //console.log('proxy-url : '+process.env.FIXIE_URL);
+	    logger.log(logger.type.INFO, 'hpepper: ' + process.env.LINE_CHANNELID + '\n' + 'kani::: data= ' + JSON.stringify(data));
 
 	    //オプションを定義
 	    var options = {
 	        url: 'https://trialbot-api.line.me/v1/events',
-	        proxy: process.env.PROXY,
+	        //proxy : process.env.PROXY,
 	        headers: headers,
 	        json: true,
 	        body: data
@@ -399,6 +400,7 @@
 	var Hpepper = __webpack_require__(13);
 	var Util = __webpack_require__(8);
 	var logger = __webpack_require__(9);
+	var redis = __webpack_require__(7);
 
 	function messanger(args, callback) {
 	    var type = args.type;
@@ -418,8 +420,35 @@
 	            'text': 'ちょっと理解不能…'
 	        }];
 	        callback(null, args.to_array, _message);
-	    } else if (type === Util.TALKTYPE.GROUMET) {
+	    } else if (type === Util.TALKTYPE.OHA) {
 	        var _message2 = [
+	        // テキスト
+	        {
+	            'contentType': 1,
+	            'text': 'おはかに♪'
+	        }];
+	        args.client.set('talktype', Util.TALKTYPE.OTHER, redis.print);
+	        callback(null, args.to_array, _message2);
+	    } else if (type === Util.TALKTYPE.KONNICHIWA) {
+	        var _message3 = [
+	        // テキスト
+	        {
+	            'contentType': 1,
+	            'text': 'こんにちわかに♪'
+	        }];
+	        args.client.set('talktype', Util.TALKTYPE.OTHER, redis.print);
+	        callback(null, args.to_array, _message3);
+	    } else if (type === Util.TALKTYPE.KONBANWA) {
+	        var _message4 = [
+	        // テキスト
+	        {
+	            'contentType': 1,
+	            'text': 'こんばんわかに♪'
+	        }];
+	        args.client.set('talktype', Util.TALKTYPE.OTHER, redis.print);
+	        callback(null, args.to_array, _message4);
+	    } else if (type === Util.TALKTYPE.GROUMET) {
+	        var _message5 = [
 	        // テキスト
 	        {
 	            'contentType': 1,
@@ -427,7 +456,7 @@
 	        }
 	        //TODO 場所、キーワード///
 	        ];
-	        callback(null, args.to_array, _message2);
+	        callback(null, args.to_array, _message5);
 	    } else if (type === Util.TALKTYPE.GROUMET_SEARCH) {
 	        args.client.get('groumet_key', function (err, reply) {
 	            var place = reply;
@@ -451,12 +480,12 @@
 	'use strict';
 
 	var request = __webpack_require__(5);
+	var logger = __webpack_require__(9);
 
 	function grnavi(place, keyword, json, to_array, callback) {
 	    // ぐるなびAPI レストラン検索API
 	    var gnavi_url = 'http://api.gnavi.co.jp/RestSearchAPI/20150630/';
-
-	    console.log('gnavi = ' + process.env.GNAVI_KEY);
+	    logger.log(logger.type.INFO, 'gnavi = ' + process.env.GNAVI_KEY);
 
 	    // ぐるなび リクエストパラメータの設定
 	    var gnavi_query = {
@@ -484,6 +513,11 @@
 	        if (!error && response.statusCode == 200) {
 	            if ('error' in body) {
 	                console.log('検索エラー' + JSON.stringify(body));
+	                var errms = [{
+	                    'contentType': 1,
+	                    'text': '見つからなかったよー'
+	                }];
+	                callback(null, to_array, errms);
 	                return;
 	            }
 
@@ -553,14 +587,14 @@
 	'use strict';
 
 	var request = __webpack_require__(5);
+	var logger = __webpack_require__(9);
 
 	//hotpepper apiつーかう
 	function hotpepper(place, keyword, json, to_array, callback) {
 
 	    // Hotpepper レストラン検索API
 	    var url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
-
-	    console.log('hpepper = ' + process.env.HP_KEY);
+	    logger.log(logger.type.INFO, 'hpepper: ' + process.env.HP_KEY);
 
 	    // ぐるなび リクエストパラメータの設定
 	    var query = {
@@ -579,11 +613,14 @@
 	    // 検索結果をオブジェクト化
 	    var result = {};
 
-	    //console.log('proxy='+process.env.PROXY);
-
 	    request.get(options, function (error, response, body) {
 	        if (!error && response.statusCode == 200) {
 	            if ('error' in body) {
+	                var errms = [{
+	                    'contentType': 1,
+	                    'text': '見つからなかったよー'
+	                }];
+	                callback(null, to_array, errms);
 	                console.log('検索エラー' + JSON.stringify(body));
 	                return;
 	            }
@@ -623,7 +660,6 @@
 	                'longitude': Number(result['longitude'])
 	            }
 	        }];
-
 	        callback(null, to_array, message);
 	    });
 	}

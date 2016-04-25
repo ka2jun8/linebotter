@@ -2,6 +2,7 @@ const Grnavi = require('./grnavi');
 const Hpepper = require('./hotpepper');
 const Util = require('./util');
 const logger = require('./logger');
+const redis = require('redis');
 
 function messanger(args, callback){
     let type = args.type;
@@ -33,6 +34,7 @@ function messanger(args, callback){
                 'text': 'おはかに♪'
             }
         ];
+        args.client.set('talktype', Util.TALKTYPE.OTHER, redis.print);
         callback(null, args.to_array, message);
     }
     else if(type===Util.TALKTYPE.KONNICHIWA){
@@ -43,6 +45,7 @@ function messanger(args, callback){
                 'text': 'こんにちわかに♪'
             }
         ];
+        args.client.set('talktype', Util.TALKTYPE.OTHER, redis.print);
         callback(null, args.to_array, message);
     }
     else if(type===Util.TALKTYPE.KONBANWA){
@@ -53,6 +56,7 @@ function messanger(args, callback){
                 'text': 'こんばんわかに♪'
             }
         ];
+        args.client.set('talktype', Util.TALKTYPE.OTHER, redis.print);
         callback(null, args.to_array, message);
     }
     else if(type===Util.TALKTYPE.GROUMET){
