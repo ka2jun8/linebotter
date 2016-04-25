@@ -1,10 +1,10 @@
-var request = require('request');
+const request = require('request');
+const logger = require('./logger');
 
 function grnavi(place, keyword, json, to_array, callback) {
     // ぐるなびAPI レストラン検索API
     var gnavi_url = 'http://api.gnavi.co.jp/RestSearchAPI/20150630/';
-
-    console.log('gnavi = ' + process.env.GNAVI_KEY);
+    logger.log(logger.type.INFO, 'gnavi = ' + process.env.GNAVI_KEY);
 
     // ぐるなび リクエストパラメータの設定
     var gnavi_query = {
@@ -32,6 +32,11 @@ function grnavi(place, keyword, json, to_array, callback) {
         if (!error && response.statusCode == 200) {
             if ('error' in body) {
                 console.log('検索エラー' + JSON.stringify(body));
+                let errms = [{
+                    'contentType': 1,
+                    'text': '見つからなかったよー'
+                }];
+                callback(null, to_array, errms);
                 return;
             }
 

@@ -1,12 +1,12 @@
-var request = require('request');
+const request = require('request');
+const logger = require('./logger');
 
 //hotpepper apiつーかう
 function hotpepper(place, keyword, json, to_array, callback) {
 
     // Hotpepper レストラン検索API
     const url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
-
-    console.log('hpepper = ' + process.env.HP_KEY);
+    logger.log(logger.type.INFO, 'hpepper: ' + process.env.HP_KEY);
 
     // ぐるなび リクエストパラメータの設定
     const query = {
@@ -25,11 +25,14 @@ function hotpepper(place, keyword, json, to_array, callback) {
     // 検索結果をオブジェクト化
     let result = {};
 
-    //console.log('proxy='+process.env.PROXY);
-    
     request.get(options, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             if ('error' in body) {
+                let errms = [{
+                    'contentType': 1,
+                    'text': '見つからなかったよー'
+                }];
+                callback(null, to_array, errms);
                 console.log('検索エラー' + JSON.stringify(body));
                 return;
             }
@@ -70,7 +73,6 @@ function hotpepper(place, keyword, json, to_array, callback) {
                 }
             }
         ];
-
         callback(null, to_array, message);
         
     });

@@ -9,7 +9,6 @@ function parser(args) {
 
     //yahoo 形態素解析web api
     const url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
-
     //console.log('yparser = ' + process.env.YAPPID);
     //console.log("text="+args.text);
 

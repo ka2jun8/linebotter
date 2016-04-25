@@ -53,12 +53,11 @@ app.post('/callback', function(req, res){
             let to_array = [];
             let to = json['result'][0]['content']['from'];
             to_array.push(to);
-            console.log('Line to:'+to);
 
             //受信メッセージ
             var text = json['result'][0]['content']['text'];
 
-            logger.log(logger.type.INFO, '['+to+']'+text);
+            logger.log(logger.type.INFO, 'Line=>('+to+'):'+text);
 
             //redis接続
             client.on('error', function (err) {

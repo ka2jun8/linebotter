@@ -1,12 +1,7 @@
-var request = require('request');
+const request = require('request');
+const logger = require('./logger');
 
 function linebot(to_array, message) {
-    /*
-    if(err){
-        return;
-    }
-    */
-
     //ヘッダーを定義
     var headers = {
         'Content-Type' : 'application/json; charset=UTF-8',
@@ -26,13 +21,13 @@ function linebot(to_array, message) {
         }
     };
     
-    console.log('kani::: data= '+ JSON.stringify(data));
-    //console.log('proxy-url : '+process.env.FIXIE_URL);
-    
+    logger.log(logger.type.INFO, 'hpepper: ' + process.env.LINE_CHANNELID+'\n'
+                +'kani::: data= '+ JSON.stringify(data));
+
     //オプションを定義
     var options = {
         url: 'https://trialbot-api.line.me/v1/events',
-        proxy : process.env.PROXY,
+        //proxy : process.env.PROXY,
         headers: headers,
         json: true,
         body: data
