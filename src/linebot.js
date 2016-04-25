@@ -1,10 +1,11 @@
 var request = require('request');
 
-function linebot(err, to_array, message) {
-
+function linebot(to_array, message) {
+    /*
     if(err){
         return;
     }
+    */
 
     //ヘッダーを定義
     var headers = {

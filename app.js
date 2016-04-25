@@ -126,6 +126,7 @@
 	            return;
 	        }
 	        */
+	        console.log(args2);
 	        var type = args2.type;
 
 	        if (type === Util.TALKTYPE.OTHER) {
@@ -136,40 +137,40 @@
 	                'text': 'かにかに〜♪'
 	            }];
 	            Linebot(args2.to_array, message);
-	            res.send(message);
+	            //res.send(message[0]);
 	        } else if (type === Util.TALKTYPE.GROUMET) {
-	            var _message = [
-	            // テキスト
-	            {
-	                'contentType': 1,
-	                'text': 'どんなところがいい？'
-	            }
-	            //TODO 場所、キーワード///
-	            ];
-	            Linebot(args2.to_array, _message);
-	            res.send(_message);
-	        } else if (type === Util.TALKTYPE.GROUMET_SEARCH) {
-	            /*
-	            // 受信テキスト
-	            var search_word_array = text.split('\n');
-	            var search_place = search_word_array[0];
-	             //検索キーワード
-	            var gnavi_keyword = '';
-	            if (search_word_array.length == 2) {
-	                var keyword_array = search_word_array[1].split('、');
-	                gnavi_keyword = keyword_array.join();
-	            }
-	            console.log('kani::: place=' + search_place + '/key=' + gnavi_keyword);
-	            */
+	                var _message = [
+	                // テキスト
+	                {
+	                    'contentType': 1,
+	                    'text': 'どんなところがいい？'
+	                }
+	                //TODO 場所、キーワード///
+	                ];
+	                Linebot(args2.to_array, _message);
+	                //res.send(message[0]);
+	            } else if (type === Util.TALKTYPE.GROUMET_SEARCH) {
+	                    /*
+	                    // 受信テキスト
+	                    var search_word_array = text.split('\n');
+	                    var search_place = search_word_array[0];
+	                     //検索キーワード
+	                    var gnavi_keyword = '';
+	                    if (search_word_array.length == 2) {
+	                        var keyword_array = search_word_array[1].split('、');
+	                        gnavi_keyword = keyword_array.join();
+	                    }
+	                    console.log('kani::: place=' + search_place + '/key=' + gnavi_keyword);
+	                    */
 
-	            client.get('groumet_key', function (err, reply) {
-	                var place = reply;
-	                //ぐるなび検索
-	                //Grnavi(place, keyword, json, to_array, callback);
-	                //ホットペッパー検索
-	                Hpepper(place, keyword, args2.json, args2.to_array, callback);
-	            });
-	        }
+	                    client.get('groumet_key', function (err, reply) {
+	                        var place = reply;
+	                        //ぐるなび検索
+	                        //Grnavi(place, keyword, json, to_array, callback);
+	                        //ホットペッパー検索
+	                        Hpepper(place, keyword, args2.json, args2.to_array, callback);
+	                    });
+	                }
 	    }],
 
 	    // LINE BOT
@@ -299,7 +300,7 @@
 	                to_array: args.to_array
 	            };
 
-	            args.callback(null, _args);
+	            args.callback(_args);
 	        });
 	    });
 	}

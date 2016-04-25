@@ -4,17 +4,18 @@ const redis = require('redis');
 const Util = require('./util');
 
 //形態素解析的な。会話を理解したい
-function parser(text, json, client, to_array, callback) {
+function parser(args) {
+
     //yahoo 形態素解析web api
     const url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
 
     //console.log('yparser = ' + process.env.YAPPID);
-    console.log("text="+text);
+    //console.log("text="+args.text);
 
     // リクエストパラメータの設定
     const query = {
         'appid': process.env.YAPPID,
-        'sentence': text
+        'sentence': args.text
     };
     const options = {
         url: url,
@@ -24,7 +25,7 @@ function parser(text, json, client, to_array, callback) {
         json: true
     };
 
-    request.get(options, function (error, response, body) {
+    request.get(options, function (error, response/*, body*/) {
         /*
         if (!error && response.statusCode == 200) {
             if ('error' in body) {
@@ -37,13 +38,15 @@ function parser(text, json, client, to_array, callback) {
         const xml = response.body;
         const _json = xml2json.toJson(xml);
         const obj = JSON.parse(_json);
+        
+        console.log(obj);
         const words = obj.ResultSet.ma_result.word_list.word;
         
         console.log(words);
 
         //トークタイプの判定
         let type = Util.TALKTYPE.OTHER;
-        client.get('talktype', (err, reply)=> {
+        args.client.get('talktype', (err, reply)=> {
             // reply is null when the key is missing
             console.log(reply);
             if(reply){
@@ -54,7 +57,7 @@ function parser(text, json, client, to_array, callback) {
                     
                     Object.keys(words).map((word)=>{
                         if(word.pos === '名詞'){
-                            client.set('groumet_key', type, redis.print);
+                            args.client.set('groumet_key', type, redis.print);
                         }
                     });
                 }
@@ -68,15 +71,23 @@ function parser(text, json, client, to_array, callback) {
                         }
                     });
                 }
-
-                console.log('talktype:'+type);
                 
                 //TODO clientID.number : text に?
                 //場所、営業時間をkeyにして保管?
-                client.set('talktype', type, redis.print);
+                args.client.set('talktype', type, redis.print);
             }
+            console.log('talktype:'+type);
+
+            const _args = {
+                type: type,
+                words: words,
+                text: args.text,
+                json: args.json,
+                client: args.client,
+                to_array: args.to_array
+            };
             
-            callback(null, words, text, json, type, client);
+            args.callback(null, _args);
         });
     });
 

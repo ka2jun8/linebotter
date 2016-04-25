@@ -49,11 +49,11 @@ app.post('/callback', function(req, res){
             //console.log('kani::: ' + JSON.stringify(json));
             
             // 送信相手の設定（配列）
-            var to_array = [];
+            let to_array = [];
             let to = json['result'][0]['content']['from'];
             to_array.push(to);
             console.log('Line to:'+to);
-            
+
             //受信メッセージ
             var text = json['result'][0]['content']['text'];
 
@@ -61,14 +61,26 @@ app.post('/callback', function(req, res){
                 console.log('Error ' + err);
             });
 
-            parser(text,json,client,to_array,callback);
+            const args = {
+                text: text,
+                json: json,
+                client: client,
+                to_array: to_array,
+                callback: callback
+            };
+
+            parser(args);
         },
         
-        function(err, words, text, json, type, client, to_array, callback){
+        function(args2, callback){
+            /*
+            console.log(err);
             if(err){
                 res.send(err);
                 return;
             }
+            */
+            let type = args2.type;
             
             if(type===Util.TALKTYPE.OTHER){
                 let message = [
@@ -78,7 +90,8 @@ app.post('/callback', function(req, res){
                         'text': 'かにかに〜♪'
                     }
                 ];
-                Linebot(err, to_array, message);
+                Linebot(args2.to_array, message);
+                res.send(message);
             }
             else if(type===Util.TALKTYPE.GROUMET){
                 let message = [
@@ -89,7 +102,8 @@ app.post('/callback', function(req, res){
                     }
                     //TODO 場所、キーワード///
                 ];
-                Linebot(err, to_array, message);
+                Linebot(args2.to_array, message);
+                res.send(message);
             }
             else if(type===Util.TALKTYPE.GROUMET_SEARCH){
                 /*
@@ -111,7 +125,7 @@ app.post('/callback', function(req, res){
                     //ぐるなび検索
                     //Grnavi(place, keyword, json, to_array, callback);
                     //ホットペッパー検索
-                    Hpepper(place, keyword, json, to_array, callback);
+                    Hpepper(place, keyword, args2.json, args2.to_array, callback);
 
                 });
 
@@ -126,7 +140,7 @@ app.post('/callback', function(req, res){
             res.send(err);
             return;
         }
-        Linebot(err, to_array, message);
+        Linebot(to_array, message);
         res.send(message);
     });
     
