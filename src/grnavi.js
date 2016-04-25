@@ -1,6 +1,6 @@
 var request = require('request');
 
-function grnavi(place, keyword, json, callback) {
+function grnavi(place, keyword, json, to_array, callback) {
     // ぐるなびAPI レストラン検索API
     var gnavi_url = 'http://api.gnavi.co.jp/RestSearchAPI/20150630/';
 
@@ -62,7 +62,31 @@ function grnavi(place, keyword, json, callback) {
 
             console.log('kani::: ' + JSON.stringify(search_result));
 
-            callback(null, json, search_result);
+            let message = [
+                // テキスト
+                {
+                    'contentType': 1,
+                    'text': 'こちらはいかがですか？\n【お店】' + search_result['name'] + '\n【営業時間】' + search_result['opentime']
+                },
+                // 画像
+                {
+                    'contentType': 2,
+                    'originalContentUrl': search_result['shop_image1'],
+                    'previewImageUrl': search_result['shop_image1']
+                },
+                // 位置情報
+                {
+                    'contentType':7,
+                    'text': search_result['name'],
+                    'location':{
+                        'title': search_result['address'],
+                        'latitude': Number(search_result['latitude']),
+                        'longitude': Number(search_result['longitude'])
+                    }
+                }
+            ];
+
+            callback(null, to_array, message);
 
         } else {
             console.log('error: ' + response.statusCode);
