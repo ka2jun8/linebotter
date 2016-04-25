@@ -233,7 +233,7 @@
 	    };
 	    var options = {
 	        url: url,
-	        proxy: process.env.PROXY,
+	        //proxy: process.env.PROXY,
 	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
 	        qs: query,
 	        json: true
@@ -567,7 +567,7 @@
 	    //オプションを定義
 	    var options = {
 	        url: 'https://trialbot-api.line.me/v1/events',
-	        proxy: process.env.PROXY,
+	        //proxy : process.env.PROXY,
 	        headers: headers,
 	        json: true,
 	        body: data
