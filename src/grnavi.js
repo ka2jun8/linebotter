@@ -1,10 +1,10 @@
-var request = require('request');
+const request = require('request');
+const logger = require('./logger');
 
-function grnavi(place, keyword, json, callback) {
+function grnavi(place, keyword, json, to_array, callback) {
     // ぐるなびAPI レストラン検索API
     var gnavi_url = 'http://api.gnavi.co.jp/RestSearchAPI/20150630/';
-
-    console.log('gnavi = ' + process.env.GNAVI_KEY);
+    logger.log(logger.type.INFO, 'gnavi = ' + process.env.GNAVI_KEY);
 
     // ぐるなび リクエストパラメータの設定
     var gnavi_query = {
@@ -17,6 +17,7 @@ function grnavi(place, keyword, json, callback) {
     };
     var gnavi_options = {
         url: gnavi_url,
+        //proxy: process.env.PROXY,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         qs: gnavi_query,
         json: true
@@ -25,10 +26,17 @@ function grnavi(place, keyword, json, callback) {
     // 検索結果をオブジェクト化
     var search_result = {};
 
+    //console.log('proxy='+process.env.PROXY);
+    
     request.get(gnavi_options, function (error, response, body) {
         if (!error && response.statusCode == 200) {
             if ('error' in body) {
                 console.log('検索エラー' + JSON.stringify(body));
+                let errms = [{
+                    'contentType': 1,
+                    'text': '見つからなかったよー'
+                }];
+                callback(null, to_array, errms);
                 return;
             }
 
@@ -59,7 +67,31 @@ function grnavi(place, keyword, json, callback) {
 
             console.log('kani::: ' + JSON.stringify(search_result));
 
-            callback(null, json, search_result);
+            let message = [
+                // テキスト
+                {
+                    'contentType': 1,
+                    'text': 'こちらはいかがですか？\n【お店】' + search_result['name'] + '\n【営業時間】' + search_result['opentime']
+                },
+                // 画像
+                {
+                    'contentType': 2,
+                    'originalContentUrl': search_result['shop_image1'],
+                    'previewImageUrl': search_result['shop_image1']
+                },
+                // 位置情報
+                {
+                    'contentType':7,
+                    'text': search_result['name'],
+                    'location':{
+                        'title': search_result['address'],
+                        'latitude': Number(search_result['latitude']),
+                        'longitude': Number(search_result['longitude'])
+                    }
+                }
+            ];
+
+            callback(null, to_array, message);
 
         } else {
             console.log('error: ' + response.statusCode);

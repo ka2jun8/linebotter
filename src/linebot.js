@@ -1,11 +1,7 @@
-var request = require('request');
+const request = require('request');
+const logger = require('./logger');
 
-function linebot(err, json, search_result) {
-
-    if(err){
-        return;
-    }
-
+function linebot(to_array, message) {
     //ヘッダーを定義
     var headers = {
         'Content-Type' : 'application/json; charset=UTF-8',
@@ -14,10 +10,6 @@ function linebot(err, json, search_result) {
         'X-Line-Trusted-User-With-ACL' : process.env.LINE_MID 
     };
 
-    // 送信相手の設定（配列）
-    var to_array = [];
-    to_array.push(json['result'][0]['content']['from']);
-
     // 送信データ作成
     var data = {
         'to': to_array,
@@ -25,39 +17,17 @@ function linebot(err, json, search_result) {
         'eventType':'140177271400161403', //固定
         'content': {
             'messageNotified': 0,
-            'messages': [
-                // テキスト
-                {
-                    'contentType': 1,
-                    'text': 'こちらはいかがですか？\n【お店】' + search_result['name'] + '\n【営業時間】' + search_result['opentime']
-                },
-                // 画像
-                {
-                    'contentType': 2,
-                    'originalContentUrl': search_result['shop_image1'],
-                    'previewImageUrl': search_result['shop_image1']
-                },
-                // 位置情報
-                {
-                    'contentType':7,
-                    'text': search_result['name'],
-                    'location':{
-                        'title': search_result['address'],
-                        'latitude': Number(search_result['latitude']),
-                        'longitude': Number(search_result['longitude'])
-                    }
-                }
-            ]
+            'messages': message
         }
     };
     
-    console.log('kani::: data= '+ JSON.stringify(data));
-    //console.log('proxy-url : '+process.env.FIXIE_URL);
-    
+    logger.log(logger.type.INFO, 'hpepper: ' + process.env.LINE_CHANNELID+'\n'
+                +'kani::: data= '+ JSON.stringify(data));
+
     //オプションを定義
     var options = {
         url: 'https://trialbot-api.line.me/v1/events',
-        //proxy : process.env.FIXIE_URL,
+        //proxy : process.env.PROXY,
         headers: headers,
         json: true,
         body: data
