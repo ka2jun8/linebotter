@@ -18,7 +18,7 @@ function parser(text, json, client, to_array, callback) {
     };
     const options = {
         url: url,
-        proxy: process.env.PROXY,
+        //proxy: process.env.PROXY,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         qs: query,
         json: true
