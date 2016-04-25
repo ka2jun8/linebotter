@@ -1,47 +1,83 @@
-var request = require('request');
-var xml2json = require('xml2json');
+const request = require('request');
+const xml2json = require('xml2json');
+const redis = require('redis');
+const Util = require('./util');
 
 //形態素解析的な。会話を理解したい
-function parser(text, client, json, callback) {
-    // Hotpepper レストラン検索API
-    var url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
+function parser(text, json, client, to_array, callback) {
+    //yahoo 形態素解析web api
+    const url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
 
-    console.log('yparser = ' + process.env.YAPPID);
+    //console.log('yparser = ' + process.env.YAPPID);
+    console.log("text="+text);
 
-    // ぐるなび リクエストパラメータの設定
-    var query = {
+    // リクエストパラメータの設定
+    const query = {
         'appid': process.env.YAPPID,
         'sentence': text
     };
-    var options = {
+    const options = {
         url: url,
-        //proxy: process.env.PROXY,
+        proxy: process.env.PROXY,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         qs: query,
         json: true
     };
 
-    // 検索結果をオブジェクト化
-    //var result = {};
-
-    //console.log('proxy='+process.env.PROXY);
-    
     request.get(options, function (error, response, body) {
+        /*
         if (!error && response.statusCode == 200) {
             if ('error' in body) {
                 console.log('検索エラー' + JSON.stringify(body));
                 return;
             }
         }
+        */
         
-        var xml = response.body;
-        var json = xml2json(xml);
-        var obj = JSON.prase(json);
-        var words = obj.ResultSet.ma_result.word_list.word;
+        const xml = response.body;
+        const _json = xml2json.toJson(xml);
+        const obj = JSON.parse(_json);
+        const words = obj.ResultSet.ma_result.word_list.word;
+        
+        console.log(words);
 
-        client.set("string key", "string val", redis.print);
+        //トークタイプの判定
+        let type = Util.TALKTYPE.OTHER;
+        client.get('talktype', (err, reply)=> {
+            // reply is null when the key is missing
+            console.log(reply);
+            if(reply){
+                type= reply;
 
-        callback(null, words);
+                if(type===Util.TALKTYPE.GROUMET){
+                    type===Util.TALKTYPE.GROUMET_SEARCH;
+                    
+                    Object.keys(words).map((word)=>{
+                        if(word.pos === '名詞'){
+                            client.set('groumet_key', type, redis.print);
+                        }
+                    });
+                }
+                else if(type===Util.TALKTYPE.OTHER){
+                    Object.keys(words).map((word)=>{
+                        if(word.reading==='ごはん'){
+                            type = Util.TALKTYPE.GROUMET;
+                        }
+                        else if(word.reading==='かに'){
+                            type = Util.TALKTYPE.OTHER;
+                        }
+                    });
+                }
+
+                console.log('talktype:'+type);
+                
+                //TODO clientID.number : text に?
+                //場所、営業時間をkeyにして保管?
+                client.set('talktype', type, redis.print);
+            }
+            
+            callback(null, words, text, json, type, client);
+        });
     });
 
 }

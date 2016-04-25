@@ -1,6 +1,6 @@
 var request = require('request');
 
-function linebot(err, json, search_result) {
+function linebot(err, to_array, message) {
 
     if(err){
         return;
@@ -14,10 +14,6 @@ function linebot(err, json, search_result) {
         'X-Line-Trusted-User-With-ACL' : process.env.LINE_MID 
     };
 
-    // 送信相手の設定（配列）
-    var to_array = [];
-    to_array.push(json['result'][0]['content']['from']);
-
     // 送信データ作成
     var data = {
         'to': to_array,
@@ -25,29 +21,7 @@ function linebot(err, json, search_result) {
         'eventType':'140177271400161403', //固定
         'content': {
             'messageNotified': 0,
-            'messages': [
-                // テキスト
-                {
-                    'contentType': 1,
-                    'text': 'こちらはいかがですか？\n【お店】' + search_result['name'] + '\n【営業時間】' + search_result['opentime']
-                },
-                // 画像
-                {
-                    'contentType': 2,
-                    'originalContentUrl': search_result['shop_image1'],
-                    'previewImageUrl': search_result['shop_image1']
-                },
-                // 位置情報
-                {
-                    'contentType':7,
-                    'text': search_result['name'],
-                    'location':{
-                        'title': search_result['address'],
-                        'latitude': Number(search_result['latitude']),
-                        'longitude': Number(search_result['longitude'])
-                    }
-                }
-            ]
+            'messages': message
         }
     };
     

@@ -1,20 +1,20 @@
 var request = require('request');
 
 //hotpepper apiつーかう
-function hotpepper(place, keyword, json, callback) {
+function hotpepper(place, keyword, json, to_array, callback) {
 
     // Hotpepper レストラン検索API
-    var url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
+    const url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
 
     console.log('hpepper = ' + process.env.HP_KEY);
 
     // ぐるなび リクエストパラメータの設定
-    var query = {
+    const query = {
         'key': process.env.HP_KEY,
         'format': 'json',
-        'large_area':'Z011'
+        'keyword': place+' '+keyword
     };
-    var options = {
+    const options = {
         url: url,
         //proxy: process.env.PROXY,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
@@ -23,7 +23,7 @@ function hotpepper(place, keyword, json, callback) {
     };
 
     // 検索結果をオブジェクト化
-    var result = {};
+    let result = {};
 
     //console.log('proxy='+process.env.PROXY);
     
@@ -35,8 +35,8 @@ function hotpepper(place, keyword, json, callback) {
             }
         }
         
-        var res = response.body;
-        var shops = res.results.shop;
+        const res = response.body;
+        const shops = res.results.shop;
         
         result = {
             name: shops[0].name,
@@ -47,7 +47,31 @@ function hotpepper(place, keyword, json, callback) {
             opentime: shops[0].open
         } ;       
 
-        callback(null, result);
+        let message = [
+            // テキスト
+            {
+                'contentType': 1,
+                'text': 'こちらはいかがですか？\n【お店】' + result['name'] + '\n【営業時間】' + result['opentime']
+            },
+            // 画像
+            {
+                'contentType': 2,
+                'originalContentUrl': result['shop_image1'],
+                'previewImageUrl': result['shop_image1']
+            },
+            // 位置情報
+            {
+                'contentType':7,
+                'text': result['name'],
+                'location':{
+                    'title': result['address'],
+                    'latitude': Number(result['latitude']),
+                    'longitude': Number(result['longitude'])
+                }
+            }
+        ];
+
+        callback(null, to_array, message);
         
     });
 

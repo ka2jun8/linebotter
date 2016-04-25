@@ -44,14 +44,21 @@
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(__dirname) {//ぐるなび＋Line bot
+	/* WEBPACK VAR INJECTION */(function(__dirname) {'use strict';
+
+	//ぐるなび＋Line bot
 
 	var express = __webpack_require__(1);
 	var app = express();
 	var bodyParser = __webpack_require__(2);
 	var async = __webpack_require__(3);
-	var Grnavi = __webpack_require__(4);
-	var Linebot = __webpack_require__(6);
+	var parser = __webpack_require__(4);
+	var Grnavi = __webpack_require__(9);
+	var Hpepper = __webpack_require__(10);
+	var Linebot = __webpack_require__(11);
+	var redis = __webpack_require__(7);
+	var client = redis.createClient();
+	var Util = __webpack_require__(8);
 
 	app.set('port', process.env.PORT || 5000);
 	app.use(bodyParser.urlencoded({ extended: true })); // JSONの送信を許可
@@ -61,9 +68,7 @@
 	//test
 	app.get('/', function (req, res) {
 	    console.log('kani::: ' + JSON.stringify(req.body));
-	    //res.send('Hello World!');
 	    console.log(__dirname + 'index.html');
-	    //path.join(__dirname, 'index.html');
 	    res.sendFile(__dirname + 'index.html');
 	});
 
@@ -74,36 +79,7 @@
 
 	app.post('/', function (req, res) {
 	    console.log('kani::: ' + JSON.stringify(req.body));
-
-	    async.waterfall([
-	    // ぐるなびAPI
-	    function (callback) {
-	        var json = req.body;
-	        console.log('kani::: ' + JSON.stringify(json));
-
-	        var text = json['result'][0]['content']['text'];
-
-	        // 受信テキスト
-	        var search_word_array = text.split('\n');
-	        var search_place = search_word_array[0];
-
-	        //検索キーワード
-	        var gnavi_keyword = '';
-	        if (search_word_array.length == 2) {
-	            var keyword_array = search_word_array[1].split('、');
-	            gnavi_keyword = keyword_array.join();
-	        }
-	        console.log('kani::: place=' + search_place + '/key=' + gnavi_keyword);
-
-	        //ぐるなび検索
-	        Grnavi(search_place, gnavi_keyword, json, callback);
-	    }],
-
-	    // LINE BOT
-	    function (err, json, search_result) {
-	        Linebot(err, json, search_result);
-	        res.send(search_result);
-	    });
+	    res.send('Hello World!');
 	});
 
 	app.get('/callback', function (req, res) {
@@ -120,28 +96,76 @@
 	        var json = req.body;
 	        //console.log('kani::: ' + JSON.stringify(json));
 
+	        // 送信相手の設定（配列）
+	        var to_array = [];
+	        var to = json['result'][0]['content']['from'];
+	        to_array.push(to);
+	        console.log('Line to:' + to);
+
+	        //受信メッセージ
 	        var text = json['result'][0]['content']['text'];
 
-	        // 受信テキスト
-	        var search_word_array = text.split('\n');
-	        var search_place = search_word_array[0];
+	        client.on('error', function (err) {
+	            console.log('Error ' + err);
+	        });
 
-	        //検索キーワード
-	        var gnavi_keyword = '';
-	        if (search_word_array.length == 2) {
-	            var keyword_array = search_word_array[1].split('、');
-	            gnavi_keyword = keyword_array.join();
+	        parser(text, json, client, to_array, callback);
+	    }, function (err, words, text, json, type, client, to_array, callback) {
+	        if (err) {
+	            res.send(err);
+	            return;
 	        }
-	        console.log('kani::: place=' + search_place + '/key=' + gnavi_keyword);
 
-	        //ぐるなび検索
-	        Grnavi(search_place, gnavi_keyword, json, callback);
+	        if (type === Util.TALKTYPE.OTHER) {
+	            var message = [
+	            // テキスト
+	            {
+	                'contentType': 1,
+	                'text': 'かにかに〜♪'
+	            }];
+	            Linebot(err, to_array, message);
+	        } else if (type === Util.TALKTYPE.GROUMET) {
+	            var _message = [
+	            // テキスト
+	            {
+	                'contentType': 1,
+	                'text': 'どんなところがいい？'
+	            }
+	            //TODO 場所、キーワード///
+	            ];
+	            Linebot(err, to_array, _message);
+	        } else if (type === Util.TALKTYPE.GROUMET_SEARCH) {
+	            /*
+	            // 受信テキスト
+	            var search_word_array = text.split('\n');
+	            var search_place = search_word_array[0];
+	             //検索キーワード
+	            var gnavi_keyword = '';
+	            if (search_word_array.length == 2) {
+	                var keyword_array = search_word_array[1].split('、');
+	                gnavi_keyword = keyword_array.join();
+	            }
+	            console.log('kani::: place=' + search_place + '/key=' + gnavi_keyword);
+	            */
+
+	            client.get('groumet_key', function (err, reply) {
+	                var place = reply;
+	                //ぐるなび検索
+	                //Grnavi(place, keyword, json, to_array, callback);
+	                //ホットペッパー検索
+	                Hpepper(place, keyword, json, to_array, callback);
+	            });
+	        }
 	    }],
 
 	    // LINE BOT
-	    function (err, json, search_result) {
-	        Linebot(err, json, search_result);
-	        res.send(search_result);
+	    function (err, to_array, message) {
+	        if (err) {
+	            res.send(err);
+	            return;
+	        }
+	        Linebot(err, to_array, message);
+	        res.send(message);
 	    });
 	});
 
@@ -172,9 +196,135 @@
 /* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
+	'use strict';
+
+	var request = __webpack_require__(5);
+	var xml2json = __webpack_require__(6);
+	var redis = __webpack_require__(7);
+	var Util = __webpack_require__(8);
+
+	//形態素解析的な。会話を理解したい
+	function parser(text, json, client, to_array, callback) {
+	    //yahoo 形態素解析web api
+	    var url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
+
+	    //console.log('yparser = ' + process.env.YAPPID);
+	    console.log("text=" + text);
+
+	    // リクエストパラメータの設定
+	    var query = {
+	        'appid': process.env.YAPPID,
+	        'sentence': text
+	    };
+	    var options = {
+	        url: url,
+	        proxy: process.env.PROXY,
+	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+	        qs: query,
+	        json: true
+	    };
+
+	    request.get(options, function (error, response, body) {
+	        /*
+	        if (!error && response.statusCode == 200) {
+	            if ('error' in body) {
+	                console.log('検索エラー' + JSON.stringify(body));
+	                return;
+	            }
+	        }
+	        */
+
+	        var xml = response.body;
+	        var _json = xml2json.toJson(xml);
+	        var obj = JSON.parse(_json);
+	        var words = obj.ResultSet.ma_result.word_list.word;
+
+	        console.log(words);
+
+	        //トークタイプの判定
+	        var type = Util.TALKTYPE.OTHER;
+	        client.get('talktype', function (err, reply) {
+	            // reply is null when the key is missing
+	            console.log(reply);
+	            if (reply) {
+	                type = reply;
+
+	                if (type === Util.TALKTYPE.GROUMET) {
+	                    type === Util.TALKTYPE.GROUMET_SEARCH;
+
+	                    Object.keys(words).map(function (word) {
+	                        if (word.pos === '名詞') {
+	                            client.set('groumet_key', type, redis.print);
+	                        }
+	                    });
+	                } else if (type === Util.TALKTYPE.OTHER) {
+	                    Object.keys(words).map(function (word) {
+	                        if (word.reading === 'ごはん') {
+	                            type = Util.TALKTYPE.GROUMET;
+	                        } else if (word.reading === 'かに') {
+	                            type = Util.TALKTYPE.OTHER;
+	                        }
+	                    });
+	                }
+
+	                console.log('talktype:' + type);
+
+	                //TODO clientID.number : text に?
+	                //場所、営業時間をkeyにして保管?
+	                client.set('talktype', type, redis.print);
+	            }
+
+	            callback(null, words, text, json, type, client);
+	        });
+	    });
+	}
+
+	module.exports = parser;
+
+/***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	module.exports = require("request");
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	module.exports = require("xml2json");
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	module.exports = require("redis");
+
+/***/ },
+/* 8 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var Util = {
+	    TALKTYPE: {
+	        GROUMET: 0,
+	        GROUMET_SEARCH: 1,
+	        OTHER: -1
+	    }
+
+	};
+
+	module.exports = Util;
+
+/***/ },
+/* 9 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
 	var request = __webpack_require__(5);
 
-	function grnavi(place, keyword, json, callback) {
+	function grnavi(place, keyword, json, to_array, callback) {
 	    // ぐるなびAPI レストラン検索API
 	    var gnavi_url = 'http://api.gnavi.co.jp/RestSearchAPI/20150630/';
 
@@ -236,53 +386,7 @@
 
 	            console.log('kani::: ' + JSON.stringify(search_result));
 
-	            callback(null, json, search_result);
-	        } else {
-	            console.log('error: ' + response.statusCode);
-	        }
-	    });
-	}
-
-	module.exports = grnavi;
-
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	module.exports = require("request");
-
-/***/ },
-/* 6 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var request = __webpack_require__(5);
-
-	function linebot(err, json, search_result) {
-
-	    if (err) {
-	        return;
-	    }
-
-	    //ヘッダーを定義
-	    var headers = {
-	        'Content-Type': 'application/json; charset=UTF-8',
-	        'X-Line-ChannelID': process.env.LINE_CHANNELID,
-	        'X-Line-ChannelSecret': process.env.LINE_SECRET,
-	        'X-Line-Trusted-User-With-ACL': process.env.LINE_MID
-	    };
-
-	    // 送信相手の設定（配列）
-	    var to_array = [];
-	    to_array.push(json['result'][0]['content']['from']);
-
-	    // 送信データ作成
-	    var data = {
-	        'to': to_array,
-	        'toChannel': 1383378250, //固定
-	        'eventType': '140177271400161403', //固定
-	        'content': {
-	            'messageNotified': 0,
-	            'messages': [
+	            var message = [
 	            // テキスト
 	            {
 	                'contentType': 1,
@@ -303,7 +407,131 @@
 	                    'latitude': Number(search_result['latitude']),
 	                    'longitude': Number(search_result['longitude'])
 	                }
-	            }]
+	            }];
+
+	            callback(null, to_array, message);
+	        } else {
+	            console.log('error: ' + response.statusCode);
+	        }
+	    });
+	}
+
+	module.exports = grnavi;
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var request = __webpack_require__(5);
+
+	//hotpepper apiつーかう
+	function hotpepper(place, keyword, json, to_array, callback) {
+
+	    // Hotpepper レストラン検索API
+	    var url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
+
+	    console.log('hpepper = ' + process.env.HP_KEY);
+
+	    // ぐるなび リクエストパラメータの設定
+	    var query = {
+	        'key': process.env.HP_KEY,
+	        'format': 'json',
+	        'keyword': place + ' ' + keyword
+	    };
+	    var options = {
+	        url: url,
+	        //proxy: process.env.PROXY,
+	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+	        qs: query,
+	        json: true
+	    };
+
+	    // 検索結果をオブジェクト化
+	    var result = {};
+
+	    //console.log('proxy='+process.env.PROXY);
+
+	    request.get(options, function (error, response, body) {
+	        if (!error && response.statusCode == 200) {
+	            if ('error' in body) {
+	                console.log('検索エラー' + JSON.stringify(body));
+	                return;
+	            }
+	        }
+
+	        var res = response.body;
+	        var shops = res.results.shop;
+
+	        result = {
+	            name: shops[0].name,
+	            shop_image1: shops[0].photo.mobile.l,
+	            address: shops[0].address,
+	            latitude: shops[0].lat,
+	            longitude: shops[0].lng,
+	            opentime: shops[0].open
+	        };
+
+	        var message = [
+	        // テキスト
+	        {
+	            'contentType': 1,
+	            'text': 'こちらはいかがですか？\n【お店】' + result['name'] + '\n【営業時間】' + result['opentime']
+	        },
+	        // 画像
+	        {
+	            'contentType': 2,
+	            'originalContentUrl': result['shop_image1'],
+	            'previewImageUrl': result['shop_image1']
+	        },
+	        // 位置情報
+	        {
+	            'contentType': 7,
+	            'text': result['name'],
+	            'location': {
+	                'title': result['address'],
+	                'latitude': Number(result['latitude']),
+	                'longitude': Number(result['longitude'])
+	            }
+	        }];
+
+	        callback(null, to_array, message);
+	    });
+	}
+
+	module.exports = hotpepper;
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var request = __webpack_require__(5);
+
+	function linebot(err, to_array, message) {
+
+	    if (err) {
+	        return;
+	    }
+
+	    //ヘッダーを定義
+	    var headers = {
+	        'Content-Type': 'application/json; charset=UTF-8',
+	        'X-Line-ChannelID': process.env.LINE_CHANNELID,
+	        'X-Line-ChannelSecret': process.env.LINE_SECRET,
+	        'X-Line-Trusted-User-With-ACL': process.env.LINE_MID
+	    };
+
+	    // 送信データ作成
+	    var data = {
+	        'to': to_array,
+	        'toChannel': 1383378250, //固定
+	        'eventType': '140177271400161403', //固定
+	        'content': {
+	            'messageNotified': 0,
+	            'messages': message
 	        }
 	    };
 
