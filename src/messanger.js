@@ -1,6 +1,7 @@
 const Grnavi = require('./grnavi');
 const Hpepper = require('./hotpepper');
 const Util = require('./util');
+const logger = require('./logger');
 
 function messanger(args, callback){
     let type = args.type;
@@ -10,6 +11,16 @@ function messanger(args, callback){
             {
                 'contentType': 1,
                 'text': 'かにかに〜♪'
+            }
+        ];
+        callback(null, args.to_array, message);
+    }
+    else if(type===Util.TALKTYPE.ERROR){
+        let message = [
+            // テキスト
+            {
+                'contentType': 1,
+                'text': 'ちょっと理解不能…'
             }
         ];
         callback(null, args.to_array, message);
@@ -28,10 +39,13 @@ function messanger(args, callback){
     else if(type===Util.TALKTYPE.GROUMET_SEARCH){
         args.client.get('groumet_key', (err, reply)=> {
             let place = reply;
+            
+            logger.log(logger.type.INFO, 'search groumet:[key]:'+reply);
+
             //ぐるなび検索
             //Grnavi(place, keyword, json, to_array, callback);
             //ホットペッパー検索
-            Hpepper(place, keyword, args.json, args.to_array, callback);
+            Hpepper(place, '', args.json, args.to_array, callback);
 
         });
 

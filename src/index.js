@@ -12,7 +12,9 @@ var redis = require('redis');
 var client = redis.createClient();
 //const Util = require('./util');
 const messanger = require('./messanger');
+const logger = require('./logger');
     
+
 app.set('port', (process.env.PORT || 5000));
 app.use(bodyParser.urlencoded({extended: true}));  // JSONの送信を許可
 app.use(bodyParser.json());                        // JSONのパースを楽に（受信時）
@@ -41,14 +43,12 @@ app.get('/callback', function(req, res) {
 });
 
 app.post('/callback', function(req, res){
-    console.log('kani::: '+JSON.stringify(req.body));
-
+    //console.log('kani::: '+JSON.stringify(req.body));
     async.waterfall([
         // ぐるなびAPI
         function(callback) {
             var json = req.body;
-            //console.log('kani::: ' + JSON.stringify(json));
-            
+
             // 送信相手の設定（配列）
             let to_array = [];
             let to = json['result'][0]['content']['from'];
@@ -58,10 +58,14 @@ app.post('/callback', function(req, res){
             //受信メッセージ
             var text = json['result'][0]['content']['text'];
 
+            logger.log(logger.type.INFO, '['+to+']'+text);
+
+            //redis接続
             client.on('error', function (err) {
                 console.log('Error ' + err);
             });
 
+            //関数呼び出し用引数
             const args = {
                 text: text,
                 json: json,
@@ -70,7 +74,7 @@ app.post('/callback', function(req, res){
                 callback: callback
             };
 
-            //parse talktype
+            //parse talktype!
             parser(args);
         },
         

@@ -2,6 +2,7 @@ const request = require('request');
 const xml2json = require('xml2json');
 const redis = require('redis');
 const Util = require('./util');
+const logger = require('./logger');
 
 //形態素解析的な。会話を理解したい
 function parser(args) {
@@ -26,15 +27,6 @@ function parser(args) {
     };
 
     request.get(options, function (error, response/*, body*/) {
-        /*
-        if (!error && response.statusCode == 200) {
-            if ('error' in body) {
-                console.log('検索エラー' + JSON.stringify(body));
-                return;
-            }
-        }
-        */
-        
         const xml = response.body;
         const _json = xml2json.toJson(xml);
         const obj = JSON.parse(_json);
@@ -51,22 +43,25 @@ function parser(args) {
         //トークタイプの判定
         let type = Util.TALKTYPE.OTHER;
         args.client.get('talktype', (err, reply)=> {
-            // reply is null when the key is missing
+            //一つ前のトークタイプ
+            logger.log(logger.type.INFO, 'previous talktype '+reply);
             //console.log('reply='+reply);
+            
             if(reply){
                 type= reply;
             }
-            if(type==Util.TALKTYPE.GROUMET){
+            if(type==Util.TALKTYPE.GROUMET){ //1
                 //console.log('type groumet');
-                type===Util.TALKTYPE.GROUMET_SEARCH;
+                type=Util.TALKTYPE.GROUMET_SEARCH; //2
                 
                 words.map((word)=>{
                     if(word.pos === '名詞'){
                         args.client.set('groumet_key', type, redis.print);
                     }
                 });
+                
             }
-            else if(type==Util.TALKTYPE.OTHER){
+            else if(type==Util.TALKTYPE.OTHER){ //0
                 //console.log('type other');
                 words.map((word)=>{
                     console.log(word);
@@ -78,7 +73,7 @@ function parser(args) {
                     }
                 });
             }
-            else if(type==Util.TALKTYPE.ERROR){
+            else if(type==Util.TALKTYPE.ERROR){ //-1
                 console.log('AFTER ERROR: {'+typeof type+'}'+type);
                 type = Util.TALKTYPE.OTHER;
             }else{
@@ -89,7 +84,7 @@ function parser(args) {
             //TODO clientID.number : text に?
             //場所、営業時間をkeyにして保管?
             args.client.set('talktype', type, redis.print);
-            //console.log('talktype:'+type);
+            logger.log(logger.type.INFO, 'set talktype '+type);
 
             const _args = {
                 type: type,

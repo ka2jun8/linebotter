@@ -55,11 +55,12 @@
 	var parser = __webpack_require__(4);
 	//var Grnavi = require('./grnavi');
 	//var Hpepper = require('./hotpepper');
-	var Linebot = __webpack_require__(9);
+	var Linebot = __webpack_require__(10);
 	var redis = __webpack_require__(7);
 	var client = redis.createClient();
 	//const Util = require('./util');
-	var messanger = __webpack_require__(10);
+	var messanger = __webpack_require__(11);
+	var logger = __webpack_require__(9);
 
 	app.set('port', process.env.PORT || 5000);
 	app.use(bodyParser.urlencoded({ extended: true })); // JSONの送信を許可
@@ -89,13 +90,11 @@
 	});
 
 	app.post('/callback', function (req, res) {
-	    console.log('kani::: ' + JSON.stringify(req.body));
-
+	    //console.log('kani::: '+JSON.stringify(req.body));
 	    async.waterfall([
 	    // ぐるなびAPI
 	    function (callback) {
 	        var json = req.body;
-	        //console.log('kani::: ' + JSON.stringify(json));
 
 	        // 送信相手の設定（配列）
 	        var to_array = [];
@@ -106,10 +105,14 @@
 	        //受信メッセージ
 	        var text = json['result'][0]['content']['text'];
 
+	        logger.log(logger.type.INFO, '[' + to + ']' + text);
+
+	        //redis接続
 	        client.on('error', function (err) {
 	            console.log('Error ' + err);
 	        });
 
+	        //関数呼び出し用引数
 	        var args = {
 	            text: text,
 	            json: json,
@@ -118,7 +121,7 @@
 	            callback: callback
 	        };
 
-	        //parse talktype
+	        //parse talktype!
 	        parser(args);
 	    },
 
@@ -173,6 +176,7 @@
 	var xml2json = __webpack_require__(6);
 	var redis = __webpack_require__(7);
 	var Util = __webpack_require__(8);
+	var logger = __webpack_require__(9);
 
 	//形態素解析的な。会話を理解したい
 	function parser(args) {
@@ -197,15 +201,6 @@
 	    };
 
 	    request.get(options, function (error, response /*, body*/) {
-	        /*
-	        if (!error && response.statusCode == 200) {
-	            if ('error' in body) {
-	                console.log('検索エラー' + JSON.stringify(body));
-	                return;
-	            }
-	        }
-	        */
-
 	        var xml = response.body;
 	        var _json = xml2json.toJson(xml);
 	        var obj = JSON.parse(_json);
@@ -222,14 +217,17 @@
 	        //トークタイプの判定
 	        var type = Util.TALKTYPE.OTHER;
 	        args.client.get('talktype', function (err, reply) {
-	            // reply is null when the key is missing
+	            //一つ前のトークタイプ
+	            logger.log(logger.type.INFO, 'previous talktype ' + reply);
 	            //console.log('reply='+reply);
+
 	            if (reply) {
 	                type = reply;
 	            }
 	            if (type == Util.TALKTYPE.GROUMET) {
+	                //1
 	                //console.log('type groumet');
-	                type === Util.TALKTYPE.GROUMET_SEARCH;
+	                type = Util.TALKTYPE.GROUMET_SEARCH; //2
 
 	                words.map(function (word) {
 	                    if (word.pos === '名詞') {
@@ -237,6 +235,7 @@
 	                    }
 	                });
 	            } else if (type == Util.TALKTYPE.OTHER) {
+	                //0
 	                //console.log('type other');
 	                words.map(function (word) {
 	                    console.log(word);
@@ -247,6 +246,7 @@
 	                    }
 	                });
 	            } else if (type == Util.TALKTYPE.ERROR) {
+	                //-1
 	                console.log('AFTER ERROR: {' + (typeof type === 'undefined' ? 'undefined' : _typeof(type)) + '}' + type);
 	                type = Util.TALKTYPE.OTHER;
 	            } else {
@@ -257,7 +257,7 @@
 	            //TODO clientID.number : text に?
 	            //場所、営業時間をkeyにして保管?
 	            args.client.set('talktype', type, redis.print);
-	            //console.log('talktype:'+type);
+	            logger.log(logger.type.INFO, 'set talktype ' + type);
 
 	            var _args = {
 	                type: type,
@@ -312,6 +312,28 @@
 
 /***/ },
 /* 9 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	var prefix = 'kanilog:::';
+	var logger = {
+	    //TODO File 出力
+	    //  ERROR, WARNING, ... 設定によって表示をかえる
+	    type: {
+	        ERROR: 0,
+	        WARNING: 1,
+	        INFO: 2
+	    },
+	    log: function log(type, text) {
+	        console.log(prefix + '[' + type + ']' + text);
+	    }
+	};
+
+	module.exports = logger;
+
+/***/ },
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -368,14 +390,15 @@
 	module.exports = linebot;
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var Grnavi = __webpack_require__(11);
-	var Hpepper = __webpack_require__(12);
+	var Grnavi = __webpack_require__(12);
+	var Hpepper = __webpack_require__(13);
 	var Util = __webpack_require__(8);
+	var logger = __webpack_require__(9);
 
 	function messanger(args, callback) {
 	    var type = args.type;
@@ -387,8 +410,16 @@
 	            'text': 'かにかに〜♪'
 	        }];
 	        callback(null, args.to_array, message);
-	    } else if (type === Util.TALKTYPE.GROUMET) {
+	    } else if (type === Util.TALKTYPE.ERROR) {
 	        var _message = [
+	        // テキスト
+	        {
+	            'contentType': 1,
+	            'text': 'ちょっと理解不能…'
+	        }];
+	        callback(null, args.to_array, _message);
+	    } else if (type === Util.TALKTYPE.GROUMET) {
+	        var _message2 = [
 	        // テキスト
 	        {
 	            'contentType': 1,
@@ -396,14 +427,17 @@
 	        }
 	        //TODO 場所、キーワード///
 	        ];
-	        callback(null, args.to_array, _message);
+	        callback(null, args.to_array, _message2);
 	    } else if (type === Util.TALKTYPE.GROUMET_SEARCH) {
 	        args.client.get('groumet_key', function (err, reply) {
 	            var place = reply;
+
+	            logger.log(logger.type.INFO, 'search groumet:[key]:' + reply);
+
 	            //ぐるなび検索
 	            //Grnavi(place, keyword, json, to_array, callback);
 	            //ホットペッパー検索
-	            Hpepper(place, keyword, args.json, args.to_array, callback);
+	            Hpepper(place, '', args.json, args.to_array, callback);
 	        });
 	    }
 	}
@@ -411,7 +445,7 @@
 	module.exports = messanger;
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -513,7 +547,7 @@
 	module.exports = grnavi;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
