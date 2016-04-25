@@ -49,9 +49,9 @@ function parser(args) {
             if(reply){
                 type= reply;
             }
-            if(type==Util.TALKTYPE.GROUMET){ //1
+            if(type==Util.TALKTYPE.GROUMET){ //2
                 //console.log('type groumet');
-                type=Util.TALKTYPE.GROUMET_SEARCH; //2
+                type=Util.TALKTYPE.GROUMET_SEARCH; //2-1
                 
                 words.map((word)=>{
                     if(word.pos === '名詞'){
@@ -63,9 +63,17 @@ function parser(args) {
             else if(type==Util.TALKTYPE.OTHER){ //0
                 //console.log('type other');
                 words.map((word)=>{
-                    console.log(word);
                     if(word.reading==='ごはん'){
                         type = Util.TALKTYPE.GROUMET;
+                    }
+                    else if('おはよう' in word.reading){
+                        type = Util.TALKTYPE.OHA;
+                    }
+                    else if('こんにち' in word.reading){
+                        type = Util.TALKTYPE.KONNICHIWA;
+                    }
+                    else if('こんばん' in word.reading){
+                        type = Util.TALKTYPE.KONBANWA;
                     }
                     else if(word.reading==='かに'){
                         type = Util.TALKTYPE.OTHER;

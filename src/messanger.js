@@ -25,6 +25,36 @@ function messanger(args, callback){
         ];
         callback(null, args.to_array, message);
     }
+    else if(type===Util.TALKTYPE.OHA){
+        let message = [
+            // テキスト
+            {
+                'contentType': 1,
+                'text': 'おはかに♪'
+            }
+        ];
+        callback(null, args.to_array, message);
+    }
+    else if(type===Util.TALKTYPE.KONNICHIWA){
+        let message = [
+            // テキスト
+            {
+                'contentType': 1,
+                'text': 'こんにちわかに♪'
+            }
+        ];
+        callback(null, args.to_array, message);
+    }
+    else if(type===Util.TALKTYPE.KONBANWA){
+        let message = [
+            // テキスト
+            {
+                'contentType': 1,
+                'text': 'こんばんわかに♪'
+            }
+        ];
+        callback(null, args.to_array, message);
+    }
     else if(type===Util.TALKTYPE.GROUMET){
         let message = [
             // テキスト
