@@ -19,7 +19,7 @@ function parser(args) {
     };
     const options = {
         url: url,
-        //proxy: process.env.PROXY,
+        proxy: process.env.PROXY,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         qs: query,
         json: true
@@ -38,45 +38,58 @@ function parser(args) {
         const xml = response.body;
         const _json = xml2json.toJson(xml);
         const obj = JSON.parse(_json);
-        
-        console.log(obj);
-        const words = obj.ResultSet.ma_result.word_list.word;
-        
-        console.log(words);
+        const word_list = obj.ResultSet.ma_result.word_list;
+
+        let words = [];
+        if(!Array.isArray(word_list.word)){
+            words.push(word_list.word);
+        }else{
+            words = word_list.word; 
+        }
+        //console.log(words);
 
         //トークタイプの判定
         let type = Util.TALKTYPE.OTHER;
         args.client.get('talktype', (err, reply)=> {
             // reply is null when the key is missing
-            console.log(reply);
+            //console.log('reply='+reply);
             if(reply){
                 type= reply;
-
-                if(type===Util.TALKTYPE.GROUMET){
-                    type===Util.TALKTYPE.GROUMET_SEARCH;
-                    
-                    Object.keys(words).map((word)=>{
-                        if(word.pos === '名詞'){
-                            args.client.set('groumet_key', type, redis.print);
-                        }
-                    });
-                }
-                else if(type===Util.TALKTYPE.OTHER){
-                    Object.keys(words).map((word)=>{
-                        if(word.reading==='ごはん'){
-                            type = Util.TALKTYPE.GROUMET;
-                        }
-                        else if(word.reading==='かに'){
-                            type = Util.TALKTYPE.OTHER;
-                        }
-                    });
-                }
-                
-                //TODO clientID.number : text に?
-                //場所、営業時間をkeyにして保管?
-                args.client.set('talktype', type, redis.print);
             }
-            console.log('talktype:'+type);
+            if(type==Util.TALKTYPE.GROUMET){
+                //console.log('type groumet');
+                type===Util.TALKTYPE.GROUMET_SEARCH;
+                
+                words.map((word)=>{
+                    if(word.pos === '名詞'){
+                        args.client.set('groumet_key', type, redis.print);
+                    }
+                });
+            }
+            else if(type==Util.TALKTYPE.OTHER){
+                //console.log('type other');
+                words.map((word)=>{
+                    console.log(word);
+                    if(word.reading==='ごはん'){
+                        type = Util.TALKTYPE.GROUMET;
+                    }
+                    else if(word.reading==='かに'){
+                        type = Util.TALKTYPE.OTHER;
+                    }
+                });
+            }
+            else if(type==Util.TALKTYPE.ERROR){
+                console.log('AFTER ERROR: {'+typeof type+'}'+type);
+                type = Util.TALKTYPE.OTHER;
+            }else{
+                console.log('ERROR: {'+typeof type+'}'+type);
+                type = Util.TALKTYPE.ERROR;
+            }
+            
+            //TODO clientID.number : text に?
+            //場所、営業時間をkeyにして保管?
+            args.client.set('talktype', type, redis.print);
+            //console.log('talktype:'+type);
 
             const _args = {
                 type: type,

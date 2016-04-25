@@ -1,10 +1,10 @@
 const Util = {
     TALKTYPE : {
-        GROUMET: 0,
-        GROUMET_SEARCH: 1,
-        OTHER: -1
+        OTHER: 0,
+        GROUMET: 1,
+        GROUMET_SEARCH: 2,
+        ERROR: -1
     }
-
 };
 
 module.exports = Util;

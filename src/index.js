@@ -5,12 +5,13 @@ var app = express();
 var bodyParser = require('body-parser');
 var async = require('async');
 var parser = require('./parser');
-var Grnavi = require('./grnavi');
-var Hpepper = require('./hotpepper');
+//var Grnavi = require('./grnavi');
+//var Hpepper = require('./hotpepper');
 var Linebot = require('./linebot');
-var redis = require("redis");
+var redis = require('redis');
 var client = redis.createClient();
-const Util = require('./util');
+//const Util = require('./util');
+const messanger = require('./messanger');
     
 app.set('port', (process.env.PORT || 5000));
 app.use(bodyParser.urlencoded({extended: true}));  // JSONの送信を許可
@@ -69,68 +70,13 @@ app.post('/callback', function(req, res){
                 callback: callback
             };
 
+            //parse talktype
             parser(args);
         },
         
+        //message dispatcher
         function(args2, callback){
-            /*
-            console.log(err);
-            if(err){
-                res.send(err);
-                return;
-            }
-            */
-            let type = args2.type;
-            
-            if(type===Util.TALKTYPE.OTHER){
-                let message = [
-                    // テキスト
-                    {
-                        'contentType': 1,
-                        'text': 'かにかに〜♪'
-                    }
-                ];
-                Linebot(args2.to_array, message);
-                res.send(message);
-            }
-            else if(type===Util.TALKTYPE.GROUMET){
-                let message = [
-                    // テキスト
-                    {
-                        'contentType': 1,
-                        'text': 'どんなところがいい？'
-                    }
-                    //TODO 場所、キーワード///
-                ];
-                Linebot(args2.to_array, message);
-                res.send(message);
-            }
-            else if(type===Util.TALKTYPE.GROUMET_SEARCH){
-                /*
-                // 受信テキスト
-                var search_word_array = text.split('\n');
-                var search_place = search_word_array[0];
-
-                //検索キーワード
-                var gnavi_keyword = '';
-                if (search_word_array.length == 2) {
-                    var keyword_array = search_word_array[1].split('、');
-                    gnavi_keyword = keyword_array.join();
-                }
-                console.log('kani::: place=' + search_place + '/key=' + gnavi_keyword);
-                */
-
-                client.get('groumet_key', (err, reply)=> {
-                    let place = reply;
-                    //ぐるなび検索
-                    //Grnavi(place, keyword, json, to_array, callback);
-                    //ホットペッパー検索
-                    Hpepper(place, keyword, args2.json, args2.to_array, callback);
-
-                });
-
-            }
-            
+            messanger(args2, callback);
         }
     ],
 
