@@ -12,24 +12,34 @@ var redis = require('redis');
 var client = redis.createClient();
 //const Util = require('./util');
 const messanger = require('./messanger');
+const Log4js = require('log4js');
+Log4js.configure('log-config.json');
+let log4js = Log4js.getLogger('system');
+app.use(Log4js.connectLogger(log4js));
 const logger = require('./logger');
-    
 
 app.set('port', (process.env.PORT || 5000));
 app.use(bodyParser.urlencoded({extended: true}));  // JSONの送信を許可
 app.use(bodyParser.json());                        // JSONのパースを楽に（受信時）
-app.use(express.static('public'));
+
+//pulic フォルダを公開する
+//app.use(express.static('public'));
+
+//TODO 
+//エスケープシーケンス
 
 //test
 app.get('/', function(req, res) {
-    console.log('kani::: '+JSON.stringify(req.body));
-    console.log(__dirname+'index.html');
-    res.sendFile(__dirname+'index.html');
+    //console.log('kani::: '+JSON.stringify(req.body));
+    //console.log(__dirname+'index.html');
+    //res.sendFile(__dirname+'index.html');
+    res.send('Hello World!');
 });
 
 app.get('/logs', function(req, res) {
     console.log('kani::: logs.');
-    res.redirect(302, './log.html');
+    //res.redirect(302, './log.html');
+    res.send('Hello World!');
 });
 
 app.post('/', function(req, res) {

@@ -1,4 +1,4 @@
-const Grnavi = require('./grnavi');
+//const Grnavi = require('./grnavi');
 const Hpepper = require('./hotpepper');
 const Util = require('./util');
 const logger = require('./logger');

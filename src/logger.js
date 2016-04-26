@@ -1,3 +1,15 @@
+//TODO
+//ログはlog4jsを使う
+//ログに日付つける
+//./logs.htmlでログfrontailに飛ばす-> nginx
+//ベーシック認証はつける
+
+var Log4js = require('log4js');
+// 設定ファイル（log-config.json）の読み込み
+Log4js.configure('log-config.json');
+// ログ出力 
+var systemLogger = Log4js.getLogger('system');
+
 const prefix= 'kanilog:::';
 let logger={
     //TODO File 出力
@@ -8,7 +20,7 @@ let logger={
         INFO:2
     },
     log:(type, text)=>{
-        console.log(prefix+'['+type+']'+text);
+        systemLogger.info(prefix+text);
     }
 };
 
