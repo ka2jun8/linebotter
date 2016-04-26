@@ -21,9 +21,11 @@ function linebot(to_array, message) {
         }
     };
     
-    logger.log(logger.type.INFO, 'hpepper: ' + process.env.LINE_CHANNELID+'\n'
-                +'kani::: data= '+ JSON.stringify(data));
-
+    //logger.log(logger.type.INFO, 'hpepper: ' 
+    //            + process.env.LINE_CHANNELID+'\n'
+    //            +'kani::: data= '+ JSON.stringify(data));
+    logger.log(logger.type.INFO, JSON.stringify(data));
+    
     //オプションを定義
     var options = {
         url: 'https://trialbot-api.line.me/v1/events',
@@ -35,13 +37,12 @@ function linebot(to_array, message) {
 
     request.post(options, function (error, response, body) {
         if (!error && response.statusCode == 200) {
-            console.log(body);
+            logger.log(logger.type.INFO, body);
         } else {
-            console.log('error: '+ JSON.stringify(response));
+            logger.log(logger.type.INFO, 'error: '+ JSON.stringify(response));
         }
     });
 
 }
-
 module.exports = linebot;
 

@@ -1,14 +1,47 @@
 
-//TODO typeとsubtypeを用意しよう
 const Util = {
+    //トークタイプ
     TALKTYPE : {
-        OTHER: '0',
-        OHA: '1-1',
-        KONNICHIWA: '1-2',
-        KONBANWA: '1-3',
-        GROUMET: '2',
-        GROUMET_SEARCH: '2-1',
-        ERROR: '-1'
+        OTHER: {
+            key: '0',
+            value: '*'
+        },
+        GREETING: {
+            key: '1',
+            OHA: {
+                key: '1-1',
+                value: 'おは'
+            },
+            KONNICHIWA: {
+                key: '1-2',
+                value: 'こんにち'
+            },
+            KONBANWA: {
+                key: '1-3',
+                value: 'こんばん'
+            }
+        },
+        GROUMET: {
+            key: '2',
+            value: 'ごはん',
+            GROUMET_SEARCH: {
+                key: '2-1',
+                value: '*'
+            }
+        },
+        ERROR: {
+            key: '-1',
+            value: '*'
+        }
+    },
+
+    //テキストセット
+    message: (text)=>{
+        let obj = [{
+            'contentType': 1,
+            'text': text
+        }];
+        return obj;
     }
 };
 

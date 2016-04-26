@@ -1,15 +1,13 @@
 //ぐるなび＋Line bot
 
-var express = require('express');
-var app = express();
-var bodyParser = require('body-parser');
-var async = require('async');
-var parser = require('./parser');
-//var Grnavi = require('./grnavi');
-//var Hpepper = require('./hotpepper');
-var Linebot = require('./linebot');
-var redis = require('redis');
-var client = redis.createClient();
+const express = require('express');
+const app = express();
+const bodyParser = require('body-parser');
+const async = require('async');
+const parser = require('./parser');
+const Linebot = require('./linebot');
+const redis = require('redis');
+const client = redis.createClient();
 //const Util = require('./util');
 const messanger = require('./messanger');
 const Log4js = require('log4js');
@@ -17,6 +15,7 @@ Log4js.configure('log-config.json');
 let log4js = Log4js.getLogger('system');
 app.use(Log4js.connectLogger(log4js));
 const logger = require('./logger');
+const util = require('./util');
 
 app.set('port', (process.env.PORT || 5000));
 app.use(bodyParser.urlencoded({extended: true}));  // JSONの送信を許可
@@ -26,32 +25,27 @@ app.use(bodyParser.json());                        // JSONのパースを楽に�
 //app.use(express.static('public'));
 
 //TODO
-//早めに200を返す
+//今何時？
+//並列処理＋エラー処理
 //署名検証 
 //エスケープシーケンス
 //画像認識
-//スタンプ
+//スタンプ対応
+//雑談API
+//ここから〜〜までの行き方 //位置情報
+//あらーむ
+//健康
+//redis search & register
+//アラーム時間差で
 
 //test
 app.get('/', function(req, res) {
     //console.log('kani::: '+JSON.stringify(req.body));
-    //console.log(__dirname+'index.html');
     //res.sendFile(__dirname+'index.html');
     res.send('Hello World!');
 });
 
-app.get('/logs', function(req, res) {
-    console.log('kani::: logs.');
-    //res.redirect(302, './log.html');
-    res.send('Hello World!');
-});
-
 app.post('/', function(req, res) {
-    console.log('kani::: '+JSON.stringify(req.body));
-    res.send('Hello World!');
-});
-
-app.get('/callback', function(req, res) {
     console.log('kani::: '+JSON.stringify(req.body));
     res.send('Hello World!');
 });
@@ -70,9 +64,6 @@ app.post('/callback', function(req, res){
             to_array.push(to);
             
             //TODO 友達登録（名前登録）機能
-            //メッセージのcontent内容
-            //位置情報も受け取れるっぽい
-            //redis search & register
 
             //受信メッセージ
             var text = json['result'][0]['content']['text'];
@@ -93,6 +84,9 @@ app.post('/callback', function(req, res){
                 callback: callback
             };
 
+            //早めに200返す
+            res.send('Receive ['+to+']:'+text);
+
             //parse talktype!
             parser(args);
         },
@@ -106,13 +100,14 @@ app.post('/callback', function(req, res){
     // LINE BOT
     function(err, to_array, message) {
         if(err){
-            res.send(err);
-            return;
+            logger.log(logger.type.ERROR, err);
+            const errm = util.message('なんかエラーがおきたみたい');
+            message = errm;
+            
         }
         Linebot(to_array, message);
-        res.send(message);
     });
-    
+
 });
 
 

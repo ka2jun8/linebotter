@@ -53,8 +53,6 @@
 	var bodyParser = __webpack_require__(2);
 	var async = __webpack_require__(3);
 	var parser = __webpack_require__(4);
-	//var Grnavi = require('./grnavi');
-	//var Hpepper = require('./hotpepper');
 	var Linebot = __webpack_require__(11);
 	var redis = __webpack_require__(7);
 	var client = redis.createClient();
@@ -65,6 +63,7 @@
 	var log4js = Log4js.getLogger('system');
 	app.use(Log4js.connectLogger(log4js));
 	var logger = __webpack_require__(9);
+	var util = __webpack_require__(8);
 
 	app.set('port', process.env.PORT || 5000);
 	app.use(bodyParser.urlencoded({ extended: true })); // JSONの送信を許可
@@ -74,19 +73,23 @@
 	//app.use(express.static('public'));
 
 	//TODO
+	//今何時？
+	//並列処理＋エラー処理
+	//署名検証
 	//エスケープシーケンス
+	//画像認識
+	//スタンプ対応
+	//雑談API
+	//ここから〜〜までの行き方 //位置情報
+	//あらーむ
+	//健康
+	//redis search & register
+	//アラーム時間差で
 
 	//test
 	app.get('/', function (req, res) {
 	    //console.log('kani::: '+JSON.stringify(req.body));
-	    //console.log(__dirname+'index.html');
 	    //res.sendFile(__dirname+'index.html');
-	    res.send('Hello World!');
-	});
-
-	app.get('/logs', function (req, res) {
-	    console.log('kani::: logs.');
-	    //res.redirect(302, './log.html');
 	    res.send('Hello World!');
 	});
 
@@ -95,15 +98,11 @@
 	    res.send('Hello World!');
 	});
 
-	app.get('/callback', function (req, res) {
-	    console.log('kani::: ' + JSON.stringify(req.body));
-	    res.send('Hello World!');
-	});
-
+	//Linebot-callback
 	app.post('/callback', function (req, res) {
 	    //console.log('kani::: '+JSON.stringify(req.body));
 	    async.waterfall([
-	    // ぐるなびAPI
+	    //Receive line message
 	    function (callback) {
 	        var json = req.body;
 
@@ -111,6 +110,8 @@
 	        var to_array = [];
 	        var to = json['result'][0]['content']['from'];
 	        to_array.push(to);
+
+	        //TODO 友達登録（名前登録）機能
 
 	        //受信メッセージ
 	        var text = json['result'][0]['content']['text'];
@@ -124,12 +125,15 @@
 
 	        //関数呼び出し用引数
 	        var args = {
+	            to_array: to_array,
 	            text: text,
 	            json: json,
 	            client: client,
-	            to_array: to_array,
 	            callback: callback
 	        };
+
+	        //早めに200返す
+	        res.send('Receive [' + to + ']:' + text);
 
 	        //parse talktype!
 	        parser(args);
@@ -143,11 +147,11 @@
 	    // LINE BOT
 	    function (err, to_array, message) {
 	        if (err) {
-	            res.send(err);
-	            return;
+	            logger.log(logger.type.ERROR, err);
+	            var errm = util.message('なんかエラーがおきたみたい');
+	            message = errm;
 	        }
 	        Linebot(to_array, message);
-	        res.send(message);
 	    });
 	});
 
@@ -187,12 +191,14 @@
 	var Util = __webpack_require__(8);
 	var logger = __webpack_require__(9);
 
+	//TODO 〜時に〜して、というスケジューラ機能?
+
 	//形態素解析的な。会話を理解したい
 	function parser(args) {
 
 	    //yahoo 形態素解析web api
 	    var url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
-	    logger.log(logger.type.INFO, 'yahooid: ' + process.env.YAPPID);
+	    //logger.log(logger.type.INFO, 'yahooid: ' + process.env.YAPPID);
 
 	    // リクエストパラメータの設定
 	    var query = {
@@ -211,76 +217,87 @@
 	        var xml = response.body;
 	        var _json = xml2json.toJson(xml);
 	        var obj = JSON.parse(_json);
-	        var word_list = obj.ResultSet.ma_result.word_list;
+	        var word_list = obj.ResultSet.ma_result.word_list.word;
+
+	        //引数オプション
+	        var option = {
+	            gkey: [] //ぐるめ検索キーワード
+	        };
 
 	        var words = [];
-	        if (!Array.isArray(word_list.word)) {
-	            words.push(word_list.word);
+	        words.push(word_list);
+	        //TODO スタンプがエラーになるっぽい?
+	        if (!Array.isArray(word_list)) {
+	            words.push(word_list);
 	        } else {
-	            words = word_list.word;
+	            word_list.forEach(function (word) {
+	                words.push(word);
+	            });
 	        }
-	        //console.log(words);
 
 	        //トークタイプの判定
 	        var type = Util.TALKTYPE.OTHER;
 	        args.client.get('talktype', function (err, reply) {
 	            //一つ前のトークタイプ
-	            logger.log(logger.type.INFO, 'previous talktype ' + reply);
-	            //console.log('reply='+reply);
-
 	            if (reply) {
-	                type = reply;
+	                logger.log(logger.type.INFO, 'previous talktype ' + reply);
+	                type = JSON.parse(reply);
 	            }
-	            if (type == Util.TALKTYPE.GROUMET) {
-	                //2
-	                //console.log('type groumet');
-	                type = Util.TALKTYPE.GROUMET_SEARCH; //2-1
-
-	                words.map(function (word) {
-	                    if (word.pos === '名詞') {
-	                        args.client.set('groumet_key', type, redis.print);
-	                    }
-	                });
-	            } else if (type == Util.TALKTYPE.OTHER) {
-	                //0
-	                //console.log('type other');
-	                words.map(function (word) {
-	                    logger.log(logger.type.INFO, type + ':' + word);
-	                    if (word.reading === 'ごはん') {
-	                        type = Util.TALKTYPE.GROUMET;
-	                    } else if (word.reading.indexOf('おはよう') != -1) {
-	                        type = Util.TALKTYPE.OHA;
-	                    } else if (word.reading.indexOf('こんにち') != -1) {
-	                        type = Util.TALKTYPE.KONNICHIWA;
-	                    } else if (word.reading.indexOf('こんばん') != -1) {
-	                        type = Util.TALKTYPE.KONBANWA;
-	                    } else {
+	            try {
+	                //set talktype
+	                if (type.key == Util.TALKTYPE.OTHER.key) {
+	                    //0
+	                    words.map(function (word) {
+	                        //logger.log(logger.type.INFO, type+':'+word);
+	                        if (word.reading === 'ごはん') {
+	                            type = Util.TALKTYPE.GROUMET;
+	                        }
+	                        /////GREETING//////
+	                        else if (word.reading.indexOf('おはよう') != -1) {
+	                                type = Util.TALKTYPE.GREETING.OHA;
+	                            } else if (word.reading.indexOf('こんにち') != -1) {
+	                                type = Util.TALKTYPE.GREETING.KONNICHIWA;
+	                            } else if (word.reading.indexOf('こんばん') != -1) {
+	                                type = Util.TALKTYPE.GREETING.KONBANWA;
+	                            }
+	                            ///////////////////
+	                            else {
+	                                    type = Util.TALKTYPE.OTHER;
+	                                }
+	                    });
+	                } else if (type.key == Util.TALKTYPE.GROUMET.key) {
+	                    //2
+	                    type = Util.TALKTYPE.GROUMET.GROUMET_SEARCH; //2-1
+	                    words.map(function (word) {
+	                        if (word.pos === '名詞') {
+	                            option.gkey.push(word.surface);
+	                            //args.client.set('groumet_key', type, redis.print);
+	                        }
+	                    });
+	                } else {
 	                        type = Util.TALKTYPE.OTHER;
 	                    }
-	                });
-	            } else if (type == Util.TALKTYPE.ERROR) {
-	                //-1
-	                console.log('AFTER ERROR: {' + (typeof type === 'undefined' ? 'undefined' : _typeof(type)) + '}' + type);
-	                type = Util.TALKTYPE.OTHER;
-	            } else {
-	                console.log('ERROR: {' + (typeof type === 'undefined' ? 'undefined' : _typeof(type)) + '}' + type);
+	            } catch (e) {
+	                logger.log(logger.type.ERROR, 'ERROR: {' + (typeof type === 'undefined' ? 'undefined' : _typeof(type)) + '}' + type + '/' + e);
 	                type = Util.TALKTYPE.ERROR;
 	            }
 
-	            //TODO clientID.number : text に?
-	            //場所、営業時間をkeyにして保管?
-	            args.client.set('talktype', type, redis.print);
-	            logger.log(logger.type.INFO, 'set talktype ' + type);
+	            //Redis にtalktypeを保管
+	            args.client.set('talktype', JSON.stringify(type), redis.print);
+	            logger.log(logger.type.INFO, 'set talktype ' + JSON.stringify(type));
 
+	            //引数設定
 	            var _args = {
 	                type: type,
 	                words: words,
+	                option: option,
+	                to_array: args.to_array,
 	                text: args.text,
 	                json: args.json,
-	                client: args.client,
-	                to_array: args.to_array
+	                client: args.client
 	            };
 
+	            //先頭nullで成功を示す
 	            args.callback(null, _args);
 	        });
 	    });
@@ -312,16 +329,49 @@
 
 	'use strict';
 
-	//TODO typeとsubtypeを用意しよう
 	var Util = {
+	    //トークタイプ
 	    TALKTYPE: {
-	        OTHER: '0',
-	        OHA: '1-1',
-	        KONNICHIWA: '1-2',
-	        KONBANWA: '1-3',
-	        GROUMET: '2',
-	        GROUMET_SEARCH: '2-1',
-	        ERROR: '-1'
+	        OTHER: {
+	            key: '0',
+	            value: '*'
+	        },
+	        GREETING: {
+	            key: '1',
+	            OHA: {
+	                key: '1-1',
+	                value: 'おは'
+	            },
+	            KONNICHIWA: {
+	                key: '1-2',
+	                value: 'こんにち'
+	            },
+	            KONBANWA: {
+	                key: '1-3',
+	                value: 'こんばん'
+	            }
+	        },
+	        GROUMET: {
+	            key: '2',
+	            value: 'ごはん',
+	            GROUMET_SEARCH: {
+	                key: '2-1',
+	                value: '*'
+	            }
+	        },
+	        ERROR: {
+	            key: '-1',
+	            value: '*'
+	        }
+	    },
+
+	    //テキストセット
+	    message: function message(text) {
+	        var obj = [{
+	            'contentType': 1,
+	            'text': text
+	        }];
+	        return obj;
 	    }
 	};
 
@@ -334,8 +384,8 @@
 	'use strict';
 
 	//TODO
+	//TODO File 出力
 	//ログはlog4jsを使う
-	//ログに日付つける
 	//./logs.htmlでログfrontailに飛ばす-> nginx
 	//ベーシック認証はつける
 
@@ -347,8 +397,6 @@
 
 	var prefix = 'kanilog:::';
 	var logger = {
-	    //TODO File 出力
-	    //  ERROR, WARNING, ... 設定によって表示をかえる
 	    type: {
 	        ERROR: 0,
 	        WARNING: 1,
@@ -396,7 +444,10 @@
 	        }
 	    };
 
-	    logger.log(logger.type.INFO, 'hpepper: ' + process.env.LINE_CHANNELID + '\n' + 'kani::: data= ' + JSON.stringify(data));
+	    //logger.log(logger.type.INFO, 'hpepper: '
+	    //            + process.env.LINE_CHANNELID+'\n'
+	    //            +'kani::: data= '+ JSON.stringify(data));
+	    logger.log(logger.type.INFO, JSON.stringify(data));
 
 	    //オプションを定義
 	    var options = {
@@ -409,13 +460,12 @@
 
 	    request.post(options, function (error, response, body) {
 	        if (!error && response.statusCode == 200) {
-	            console.log(body);
+	            logger.log(logger.type.INFO, body);
 	        } else {
-	            console.log('error: ' + JSON.stringify(response));
+	            logger.log(logger.type.INFO, 'error: ' + JSON.stringify(response));
 	        }
 	    });
 	}
-
 	module.exports = linebot;
 
 /***/ },
@@ -426,76 +476,50 @@
 
 	//const Grnavi = require('./grnavi');
 	var Hpepper = __webpack_require__(13);
-	var Util = __webpack_require__(8);
+	var util = __webpack_require__(8);
 	var logger = __webpack_require__(9);
 	var redis = __webpack_require__(7);
 
+	//メッセージ-dispatcher
 	function messanger(args, callback) {
 	    var type = args.type;
-	    if (type === Util.TALKTYPE.OTHER) {
-	        var message = [
-	        // テキスト
-	        {
-	            'contentType': 1,
-	            'text': 'かにかに〜♪'
-	        }];
-	        callback(null, args.to_array, message);
-	    } else if (type === Util.TALKTYPE.ERROR) {
-	        var _message = [
-	        // テキスト
-	        {
-	            'contentType': 1,
-	            'text': 'ちょっと理解不能…'
-	        }];
-	        callback(null, args.to_array, _message);
-	    } else if (type === Util.TALKTYPE.OHA) {
-	        var _message2 = [
-	        // テキスト
-	        {
-	            'contentType': 1,
-	            'text': 'おはかに♪'
-	        }];
-	        args.client.set('talktype', Util.TALKTYPE.OTHER, redis.print);
-	        callback(null, args.to_array, _message2);
-	    } else if (type === Util.TALKTYPE.KONNICHIWA) {
-	        var _message3 = [
-	        // テキスト
-	        {
-	            'contentType': 1,
-	            'text': 'こんにちわかに♪'
-	        }];
-	        args.client.set('talktype', Util.TALKTYPE.OTHER, redis.print);
-	        callback(null, args.to_array, _message3);
-	    } else if (type === Util.TALKTYPE.KONBANWA) {
-	        var _message4 = [
-	        // テキスト
-	        {
-	            'contentType': 1,
-	            'text': 'こんばんわかに♪'
-	        }];
-	        args.client.set('talktype', Util.TALKTYPE.OTHER, redis.print);
-	        callback(null, args.to_array, _message4);
-	    } else if (type === Util.TALKTYPE.GROUMET) {
-	        var _message5 = [
-	        // テキスト
-	        {
-	            'contentType': 1,
-	            'text': 'どんなところがいい？'
+
+	    try {
+	        logger.log(logger.type.INFO, JSON.stringify(type) + '/type-key:' + type.key);
+	        if (type.key === util.TALKTYPE.OTHER.key) {
+	            callback(null, args.to_array, util.message('かにかに〜♪'));
+	        } else if (type.key === util.TALKTYPE.ERROR.key) {
+	            callback(null, args.to_array, util.message('ちょっと理解不能…'));
 	        }
-	        //TODO 場所、キーワード///
-	        ];
-	        callback(null, args.to_array, _message5);
-	    } else if (type === Util.TALKTYPE.GROUMET_SEARCH) {
-	        args.client.get('groumet_key', function (err, reply) {
-	            var place = reply;
+	        /////GREETING//////
+	        else if (type.key === util.TALKTYPE.GREETING.OHA.key) {
+	                args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+	                callback(null, args.to_array, util.message('おはかに♪'));
+	            } else if (type.key === util.TALKTYPE.GREETING.KONNICHIWA.key) {
+	                args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+	                callback(null, args.to_array, util.message('こんにちわかに♪'));
+	            } else if (type.key === util.TALKTYPE.GREETING.KONBANWA.key) {
+	                args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+	                callback(null, args.to_array, util.message('こんばんわかに♪'));
+	            }
+	            //////GROUMET///////
+	            else if (type.key === util.TALKTYPE.GROUMET.key) {
+	                    callback(null, args.to_array, util.message('どんなところがいい？'));
+	                } else if (type.key === util.TALKTYPE.GROUMET.GROUMET_SEARCH.key) {
+	                    args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+	                    //ぐるなび検索
+	                    //Grnavi(place, keyword, json, to_array, callback);
+	                    console.log(args.option);
 
-	            logger.log(logger.type.INFO, 'search groumet:[key]:' + reply);
-
-	            //ぐるなび検索
-	            //Grnavi(place, keyword, json, to_array, callback);
-	            //ホットペッパー検索
-	            Hpepper(place, '', args.json, args.to_array, callback);
-	        });
+	                    var gkey = args.option.gkey;
+	                    logger.log(logger.type.INFO, 'search groumet:[key]:' + gkey);
+	                    //ホットペッパー検索
+	                    Hpepper(gkey, args.json, args.to_array, callback);
+	                } else {
+	                    callback('unknown error');
+	                }
+	    } catch (err) {
+	        callback(err);
 	    }
 	}
 
@@ -509,19 +533,27 @@
 
 	var request = __webpack_require__(5);
 	var logger = __webpack_require__(9);
+	var util = __webpack_require__(8);
 
 	//hotpepper apiつーかう
-	function hotpepper(place, keyword, json, to_array, callback) {
+	function hotpepper(keys, json, to_array, callback) {
 
 	    // Hotpepper レストラン検索API
 	    var url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
-	    logger.log(logger.type.INFO, 'hpepper: ' + process.env.HP_KEY);
+	    //logger.log(logger.type.INFO, 'hpepper: ' + process.env.HP_KEY);
+
+	    logger.log(logger.type.INFO, 'keywords ' + keys);
+
+	    var keyword = '';
+	    keys.map(function (key) {
+	        keyword += key + ' ';
+	    });
 
 	    // ぐるなび リクエストパラメータの設定
 	    var query = {
 	        'key': process.env.HP_KEY,
 	        'format': 'json',
-	        'keyword': place + ' ' + keyword
+	        'keyword': keyword
 	    };
 	    var options = {
 	        url: url,
@@ -535,53 +567,66 @@
 	    var result = {};
 
 	    request.get(options, function (error, response, body) {
-	        if (!error && response.statusCode == 200) {
-	            if ('error' in body) {
-	                var errms = [{
+	        try {
+
+	            if (!error && response.statusCode == 200) {
+	                if ('error' in body) {
+	                    var errms = [{
+	                        'contentType': 1,
+	                        'text': '見つからなかったよー'
+	                    }];
+	                    callback(null, to_array, errms);
+	                    console.log('検索エラー' + JSON.stringify(body));
+	                    return;
+	                }
+	            }
+
+	            var res = response.body;
+	            var shops = res.results.shop;
+
+	            var message = [];
+
+	            if (shops) {
+
+	                result = {
+	                    name: shops[0].name,
+	                    shop_image1: shops[0].photo.mobile.l,
+	                    address: shops[0].address,
+	                    latitude: shops[0].lat,
+	                    longitude: shops[0].lng,
+	                    opentime: shops[0].open
+	                };
+
+	                message = [
+	                // テキスト
+	                {
 	                    'contentType': 1,
-	                    'text': '見つからなかったよー'
+	                    'text': 'こちらはいかがですか？\n【お店】' + result['name'] + '\n【営業時間】' + result['opentime']
+	                },
+	                // 画像
+	                {
+	                    'contentType': 2,
+	                    'originalContentUrl': result['shop_image1'],
+	                    'previewImageUrl': result['shop_image1']
+	                },
+	                // 位置情報
+	                {
+	                    'contentType': 7,
+	                    'text': result['name'],
+	                    'location': {
+	                        'title': result['address'],
+	                        'latitude': Number(result['latitude']),
+	                        'longitude': Number(result['longitude'])
+	                    }
 	                }];
-	                callback(null, to_array, errms);
-	                console.log('検索エラー' + JSON.stringify(body));
-	                return;
+	            } else {
+	                message = util.message('見つからないかに…');
 	            }
+
+	            callback(null, to_array, message);
+	        } catch (e) {
+	            callback(e);
 	        }
-
-	        var res = response.body;
-	        var shops = res.results.shop;
-
-	        result = {
-	            name: shops[0].name,
-	            shop_image1: shops[0].photo.mobile.l,
-	            address: shops[0].address,
-	            latitude: shops[0].lat,
-	            longitude: shops[0].lng,
-	            opentime: shops[0].open
-	        };
-
-	        var message = [
-	        // テキスト
-	        {
-	            'contentType': 1,
-	            'text': 'こちらはいかがですか？\n【お店】' + result['name'] + '\n【営業時間】' + result['opentime']
-	        },
-	        // 画像
-	        {
-	            'contentType': 2,
-	            'originalContentUrl': result['shop_image1'],
-	            'previewImageUrl': result['shop_image1']
-	        },
-	        // 位置情報
-	        {
-	            'contentType': 7,
-	            'text': result['name'],
-	            'location': {
-	                'title': result['address'],
-	                'latitude': Number(result['latitude']),
-	                'longitude': Number(result['longitude'])
-	            }
-	        }];
-	        callback(null, to_array, message);
 	    });
 	}
 
