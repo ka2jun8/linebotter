@@ -1,6 +1,6 @@
 //TODO
+//TODO File 出力
 //ログはlog4jsを使う
-//ログに日付つける
 //./logs.htmlでログfrontailに飛ばす-> nginx
 //ベーシック認証はつける
 
@@ -12,8 +12,6 @@ var systemLogger = Log4js.getLogger('system');
 
 const prefix= 'kanilog:::';
 let logger={
-    //TODO File 出力
-    //  ERROR, WARNING, ... 設定によって表示をかえる
     type: {
         ERROR:0,
         WARNING:1,

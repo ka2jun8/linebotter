@@ -25,8 +25,12 @@ app.use(bodyParser.json());                        // JSONのパースを楽に�
 //pulic フォルダを公開する
 //app.use(express.static('public'));
 
-//TODO 
+//TODO
+//早めに200を返す
+//署名検証 
 //エスケープシーケンス
+//画像認識
+//スタンプ
 
 //test
 app.get('/', function(req, res) {
@@ -52,10 +56,11 @@ app.get('/callback', function(req, res) {
     res.send('Hello World!');
 });
 
+//Linebot-callback
 app.post('/callback', function(req, res){
     //console.log('kani::: '+JSON.stringify(req.body));
     async.waterfall([
-        // ぐるなびAPI
+        //Receive line message
         function(callback) {
             var json = req.body;
 
@@ -63,6 +68,11 @@ app.post('/callback', function(req, res){
             let to_array = [];
             let to = json['result'][0]['content']['from'];
             to_array.push(to);
+            
+            //TODO 友達登録（名前登録）機能
+            //メッセージのcontent内容
+            //位置情報も受け取れるっぽい
+            //redis search & register
 
             //受信メッセージ
             var text = json['result'][0]['content']['text'];
@@ -76,10 +86,10 @@ app.post('/callback', function(req, res){
 
             //関数呼び出し用引数
             const args = {
+                to_array: to_array,
                 text: text,
                 json: json,
                 client: client,
-                to_array: to_array,
                 callback: callback
             };
 

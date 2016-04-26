@@ -4,6 +4,7 @@ const Util = require('./util');
 const logger = require('./logger');
 const redis = require('redis');
 
+//メッセージ-dispatcher
 function messanger(args, callback){
     let type = args.type;
     if(type===Util.TALKTYPE.OTHER){
