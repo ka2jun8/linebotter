@@ -69,7 +69,7 @@ function parseText(previous, args) {
                         type = Util.TALKTYPE.GREETING.KONBANWA;
                     }
                     ///////////////////
-                    else if(word.reading.indexOf('かわいい？')!=-1){
+                    else if(word.reading.indexOf('かわいい')!=-1){
                         type = Util.TALKTYPE.KAWAII;
                     }
                     else if(word.reading.indexOf('ありがとう')!=-1){
