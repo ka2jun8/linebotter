@@ -4,12 +4,12 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const async = require('async');
-const cparser = require('./contentParser');
+const cparser = require('./parseContent');
 const Linebot = require('./linebot');
 const redis = require('redis');
 const client = redis.createClient();
 //const Util = require('./util');
-const messanger = require('./messanger');
+const dispatcher = require('./dispatcher');
 const Log4js = require('log4js');
 Log4js.configure('log-config.json');
 let log4js = Log4js.getLogger('system');
@@ -67,9 +67,8 @@ app.post('/callback', function(req, res){
 
             //受信メッセージ
             const content = json.result[0].content;
-            //var text = json['result'][0]['content']['text'];
 
-            logger.log(logger.type.INFO, 'Line=>('+to+'):'+JSON.stringify(content));
+            logger.log(logger.type.INFO, 'INDEX: Line=>('+to+'):'+JSON.stringify(content));
 
             //redis接続
             client.on('error', function (err) {
@@ -94,7 +93,7 @@ app.post('/callback', function(req, res){
         //message dispatcher
         function(args2, callback){
             
-            messanger(args2, callback);
+            dispatcher(args2, callback);
         }
     ],
 

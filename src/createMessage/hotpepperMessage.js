@@ -1,9 +1,9 @@
 const request = require('request');
-const logger = require('./logger');
-const util = require('./util');
+const logger = require('../logger');
+const util = require('../util');
 
 //hotpepper apiつーかう
-function hotpepper(option, to_array, callback) {
+function hotpepperMessage(option, to_array, callback) {
 
     // Hotpepper レストラン検索API
     const url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
@@ -20,7 +20,7 @@ function hotpepper(option, to_array, callback) {
     };
     
     if(typeof keys !== 'undefined'){
-        logger.log(logger.type.INFO, 'keywords ' + keys);
+        logger.log(logger.type.INFO, 'hMessage: keywords ' + keys);
 
         keys.map((key)=>{
             keyword += key+' ';
@@ -49,7 +49,7 @@ function hotpepper(option, to_array, callback) {
 
             if (!error && response.statusCode == 200) {
                 if ('error' in body) {
-                    logger.log(logger.type.ERROR, '検索エラー' + JSON.stringify(body));
+                    logger.log(logger.type.ERROR, 'hMessage: 検索エラー' + JSON.stringify(body));
                     let errms = util.message('見つからないかに…');
                     callback(null, to_array, errms);
                     return;
@@ -110,4 +110,4 @@ function hotpepper(option, to_array, callback) {
 
 }
 
-module.exports = hotpepper;
+module.exports = hotpepperMessage;

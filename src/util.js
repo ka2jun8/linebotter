@@ -5,7 +5,7 @@ const Util = {
         OTHER: {
             key: '0',
             value: '*'
-        },
+        },        
         GREETING: {
             key: '1',
             OHA: {
