@@ -52,18 +52,18 @@
 	var app = express();
 	var bodyParser = __webpack_require__(2);
 	var async = __webpack_require__(3);
-	var parser = __webpack_require__(4);
-	var Linebot = __webpack_require__(11);
-	var redis = __webpack_require__(7);
+	var cparser = __webpack_require__(4);
+	var Linebot = __webpack_require__(12);
+	var redis = __webpack_require__(8);
 	var client = redis.createClient();
 	//const Util = require('./util');
-	var messanger = __webpack_require__(12);
-	var Log4js = __webpack_require__(10);
+	var messanger = __webpack_require__(13);
+	var Log4js = __webpack_require__(11);
 	Log4js.configure('log-config.json');
 	var log4js = Log4js.getLogger('system');
 	app.use(Log4js.connectLogger(log4js));
-	var logger = __webpack_require__(9);
-	var util = __webpack_require__(8);
+	var logger = __webpack_require__(10);
+	var util = __webpack_require__(9);
 
 	app.set('port', process.env.PORT || 5000);
 	app.use(bodyParser.urlencoded({ extended: true })); // JSONの送信を許可
@@ -114,9 +114,10 @@
 	        //TODO 友達登録（名前登録）機能
 
 	        //受信メッセージ
-	        var text = json['result'][0]['content']['text'];
+	        var content = json.result[0].content;
+	        //var text = json['result'][0]['content']['text'];
 
-	        logger.log(logger.type.INFO, 'Line=>(' + to + '):' + text);
+	        logger.log(logger.type.INFO, 'Line=>(' + to + '):' + JSON.stringify(content));
 
 	        //redis接続
 	        client.on('error', function (err) {
@@ -126,21 +127,21 @@
 	        //関数呼び出し用引数
 	        var args = {
 	            to_array: to_array,
-	            text: text,
-	            json: json,
+	            content: content,
 	            client: client,
 	            callback: callback
 	        };
 
-	        //早めに200返す
-	        res.send('Receive [' + to + ']:' + text);
+	        //さきに200返しておく
+	        res.send('Receive [' + to + ']:' + JSON.stringify(content));
 
-	        //parse talktype!
-	        parser(args);
+	        //content parse & set talktype
+	        cparser(args);
 	    },
 
 	    //message dispatcher
 	    function (args2, callback) {
+
 	        messanger(args2, callback);
 	    }],
 
@@ -183,18 +184,70 @@
 
 	'use strict';
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+	var tparser = __webpack_require__(5);
+	var logger = __webpack_require__(10);
+	var redis = __webpack_require__(8);
+	var util = __webpack_require__(9);
 
-	var request = __webpack_require__(5);
-	var xml2json = __webpack_require__(6);
-	var redis = __webpack_require__(7);
-	var Util = __webpack_require__(8);
-	var logger = __webpack_require__(9);
+	function contentParser(args) {
+	    //トークタイプの判定
+	    var type = util.TALKTYPE.OTHER;
+
+	    //スタンプや位置情報、画像などを取り出し
+	    var location = {};
+	    if (args.content.contentType == 1) {
+	        //textだよ
+	        tparser(args);
+	        return;
+	    } else if (args.content.contentType == 2) {
+	        //imageだよ
+	    } else if (args.content.contentType == 7) {
+	            //locationだよ
+	            location = args.content.location;
+	            logger.log(logger.type.INFO, location);
+	        } else if (args.content.contentType == 8) {}
+	        //stickerスタンプだよ
+
+
+	        //引数オプション
+	    var option = {
+	        glocation: location //ぐるめロケーション
+	    };
+
+	    //Redis にtalktypeを保管
+	    args.client.set('talktype', JSON.stringify(type), redis.print);
+	    logger.log(logger.type.INFO, 'set talktype ' + JSON.stringify(type));
+
+	    //引数設定
+	    var _args = {
+	        type: type,
+	        option: option,
+	        to_array: args.to_array,
+	        client: args.client
+	    };
+
+	    //先頭nullで成功を示す
+	    args.callback(null, _args);
+	}
+
+	module.exports = contentParser;
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var request = __webpack_require__(6);
+	var xml2json = __webpack_require__(7);
+	var redis = __webpack_require__(8);
+	var Util = __webpack_require__(9);
+	var logger = __webpack_require__(10);
 
 	//TODO 〜時に〜して、というスケジューラ機能?
 
 	//形態素解析的な。会話を理解したい
-	function parser(args) {
+	function textParser(args) {
 
 	    //yahoo 形態素解析web api
 	    var url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
@@ -203,7 +256,7 @@
 	    // リクエストパラメータの設定
 	    var query = {
 	        'appid': process.env.YAPPID,
-	        'sentence': args.text
+	        'sentence': args.content.text
 	    };
 	    var options = {
 	        url: url,
@@ -219,14 +272,8 @@
 	        var obj = JSON.parse(_json);
 	        var word_list = obj.ResultSet.ma_result.word_list.word;
 
-	        //引数オプション
-	        var option = {
-	            gkey: [] //ぐるめ検索キーワード
-	        };
-
 	        var words = [];
 	        words.push(word_list);
-	        //TODO スタンプがエラーになるっぽい?
 	        if (!Array.isArray(word_list)) {
 	            words.push(word_list);
 	        } else {
@@ -235,13 +282,22 @@
 	            });
 	        }
 
+	        //引数オプション       
+	        var option = {
+	            gkey: []
+	        };
+
 	        //トークタイプの判定
 	        var type = Util.TALKTYPE.OTHER;
 	        args.client.get('talktype', function (err, reply) {
 	            //一つ前のトークタイプ
 	            if (reply) {
 	                logger.log(logger.type.INFO, 'previous talktype ' + reply);
-	                type = JSON.parse(reply);
+	                try {
+	                    type = JSON.parse(reply);
+	                } catch (e) {
+	                    type = Util.TALKTYPE.OTHER;
+	                }
 	            }
 	            try {
 	                //set talktype
@@ -271,14 +327,13 @@
 	                    words.map(function (word) {
 	                        if (word.pos === '名詞') {
 	                            option.gkey.push(word.surface);
-	                            //args.client.set('groumet_key', type, redis.print);
 	                        }
 	                    });
 	                } else {
-	                        type = Util.TALKTYPE.OTHER;
-	                    }
+	                    type = Util.TALKTYPE.OTHER;
+	                }
 	            } catch (e) {
-	                logger.log(logger.type.ERROR, 'ERROR: {' + (typeof type === 'undefined' ? 'undefined' : _typeof(type)) + '}' + type + '/' + e);
+	                logger.log(logger.type.ERROR, 'ERROR: ' + JSON.stringify(type) + '/' + e);
 	                type = Util.TALKTYPE.ERROR;
 	            }
 
@@ -289,11 +344,8 @@
 	            //引数設定
 	            var _args = {
 	                type: type,
-	                words: words,
 	                option: option,
 	                to_array: args.to_array,
-	                text: args.text,
-	                json: args.json,
 	                client: args.client
 	            };
 
@@ -303,28 +355,28 @@
 	    });
 	}
 
-	module.exports = parser;
-
-/***/ },
-/* 5 */
-/***/ function(module, exports) {
-
-	module.exports = require("request");
+	module.exports = textParser;
 
 /***/ },
 /* 6 */
 /***/ function(module, exports) {
 
-	module.exports = require("xml2json");
+	module.exports = require("request");
 
 /***/ },
 /* 7 */
 /***/ function(module, exports) {
 
-	module.exports = require("redis");
+	module.exports = require("xml2json");
 
 /***/ },
 /* 8 */
+/***/ function(module, exports) {
+
+	module.exports = require("redis");
+
+/***/ },
+/* 9 */
 /***/ function(module, exports) {
 
 	'use strict';
@@ -378,7 +430,7 @@
 	module.exports = Util;
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -389,7 +441,7 @@
 	//./logs.htmlでログfrontailに飛ばす-> nginx
 	//ベーシック認証はつける
 
-	var Log4js = __webpack_require__(10);
+	var Log4js = __webpack_require__(11);
 	// 設定ファイル（log-config.json）の読み込み
 	Log4js.configure('log-config.json');
 	// ログ出力
@@ -410,19 +462,19 @@
 	module.exports = logger;
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports) {
 
 	module.exports = require("log4js");
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var request = __webpack_require__(5);
-	var logger = __webpack_require__(9);
+	var request = __webpack_require__(6);
+	var logger = __webpack_require__(10);
 
 	function linebot(to_array, message) {
 	    //ヘッダーを定義
@@ -469,23 +521,25 @@
 	module.exports = linebot;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	//const Grnavi = require('./grnavi');
-	var Hpepper = __webpack_require__(13);
-	var util = __webpack_require__(8);
-	var logger = __webpack_require__(9);
-	var redis = __webpack_require__(7);
+	var Hpepper = __webpack_require__(14);
+	var util = __webpack_require__(9);
+	var logger = __webpack_require__(10);
+	var redis = __webpack_require__(8);
 
 	//メッセージ-dispatcher
 	function messanger(args, callback) {
 	    var type = args.type;
 
 	    try {
+
 	        logger.log(logger.type.INFO, JSON.stringify(type) + '/type-key:' + type.key);
+
 	        if (type.key === util.TALKTYPE.OTHER.key) {
 	            callback(null, args.to_array, util.message('かにかに〜♪'));
 	        } else if (type.key === util.TALKTYPE.ERROR.key) {
@@ -507,18 +561,20 @@
 	                    callback(null, args.to_array, util.message('どんなところがいい？'));
 	                } else if (type.key === util.TALKTYPE.GROUMET.GROUMET_SEARCH.key) {
 	                    args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+
+	                    logger.log(logger.type.INFO, JSON.stringify(args.option));
+
 	                    //ぐるなび検索
 	                    //Grnavi(place, keyword, json, to_array, callback);
-	                    console.log(args.option);
 
-	                    var gkey = args.option.gkey;
-	                    logger.log(logger.type.INFO, 'search groumet:[key]:' + gkey);
 	                    //ホットペッパー検索
-	                    Hpepper(gkey, args.json, args.to_array, callback);
+	                    Hpepper(args.option, args.to_array, callback);
 	                } else {
+	                    //ERROR
 	                    callback('unknown error');
 	                }
 	    } catch (err) {
+	        //ERROR
 	        callback(err);
 	    }
 	}
@@ -526,35 +582,45 @@
 	module.exports = messanger;
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var request = __webpack_require__(5);
-	var logger = __webpack_require__(9);
-	var util = __webpack_require__(8);
+	var request = __webpack_require__(6);
+	var logger = __webpack_require__(10);
+	var util = __webpack_require__(9);
 
 	//hotpepper apiつーかう
-	function hotpepper(keys, json, to_array, callback) {
+	function hotpepper(option, to_array, callback) {
 
 	    // Hotpepper レストラン検索API
 	    var url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
 	    //logger.log(logger.type.INFO, 'hpepper: ' + process.env.HP_KEY);
 
-	    logger.log(logger.type.INFO, 'keywords ' + keys);
-
+	    var keys = option.gkey;
 	    var keyword = '';
-	    keys.map(function (key) {
-	        keyword += key + ' ';
-	    });
+	    var location = option.location;
 
-	    // ぐるなび リクエストパラメータの設定
+	    // HotPepper リクエストパラメータの設定
 	    var query = {
 	        'key': process.env.HP_KEY,
-	        'format': 'json',
-	        'keyword': keyword
+	        'format': 'json'
 	    };
+
+	    if (typeof keys !== 'undefined') {
+	        logger.log(logger.type.INFO, 'keywords ' + keys);
+
+	        keys.map(function (key) {
+	            keyword += key + ' ';
+	        });
+
+	        query.keyword = keyword;
+	    } else if (typeof location !== 'undefined') {
+	        query.lat = location.latitude;
+	        query.lng = location.longitude;
+	    }
+
 	    var options = {
 	        url: url,
 	        //proxy: process.env.PROXY,
@@ -571,12 +637,9 @@
 
 	            if (!error && response.statusCode == 200) {
 	                if ('error' in body) {
-	                    var errms = [{
-	                        'contentType': 1,
-	                        'text': '見つからなかったよー'
-	                    }];
+	                    logger.log(logger.type.ERROR, '検索エラー' + JSON.stringify(body));
+	                    var errms = util.message('見つからないかに…');
 	                    callback(null, to_array, errms);
-	                    console.log('検索エラー' + JSON.stringify(body));
 	                    return;
 	                }
 	            }

@@ -3,25 +3,36 @@ const logger = require('./logger');
 const util = require('./util');
 
 //hotpepper apiつーかう
-function hotpepper(keys, json, to_array, callback) {
+function hotpepper(option, to_array, callback) {
 
     // Hotpepper レストラン検索API
     const url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
     //logger.log(logger.type.INFO, 'hpepper: ' + process.env.HP_KEY);
 
-    logger.log(logger.type.INFO, 'keywords '+keys);
-
+    const keys = option.gkey;
     let keyword = '';
-    keys.map((key)=>{
-        keyword += key+' ';
-    });
-    
-    // ぐるなび リクエストパラメータの設定
+    const location = option.location;
+
+    // HotPepper リクエストパラメータの設定
     const query = {
         'key': process.env.HP_KEY,
-        'format': 'json',
-        'keyword': keyword
+        'format': 'json'
     };
+    
+    if(typeof keys !== 'undefined'){
+        logger.log(logger.type.INFO, 'keywords ' + keys);
+
+        keys.map((key)=>{
+            keyword += key+' ';
+        });
+
+        query.keyword = keyword;
+    }
+    else if(typeof location !== 'undefined'){
+        query.lat = location.latitude;
+        query.lng = location.longitude;
+    }
+    
     const options = {
         url: url,
         //proxy: process.env.PROXY,
@@ -38,12 +49,9 @@ function hotpepper(keys, json, to_array, callback) {
 
             if (!error && response.statusCode == 200) {
                 if ('error' in body) {
-                    let errms = [{
-                        'contentType': 1,
-                        'text': '見つからなかったよー'
-                    }];
+                    logger.log(logger.type.ERROR, '検索エラー' + JSON.stringify(body));
+                    let errms = util.message('見つからないかに…');
                     callback(null, to_array, errms);
-                    console.log('検索エラー' + JSON.stringify(body));
                     return;
                 }
             }

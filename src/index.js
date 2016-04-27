@@ -4,7 +4,7 @@ const express = require('express');
 const app = express();
 const bodyParser = require('body-parser');
 const async = require('async');
-const parser = require('./parser');
+const cparser = require('./contentParser');
 const Linebot = require('./linebot');
 const redis = require('redis');
 const client = redis.createClient();
@@ -66,9 +66,10 @@ app.post('/callback', function(req, res){
             //TODO 友達登録（名前登録）機能
 
             //受信メッセージ
-            var text = json['result'][0]['content']['text'];
+            const content = json.result[0].content;
+            //var text = json['result'][0]['content']['text'];
 
-            logger.log(logger.type.INFO, 'Line=>('+to+'):'+text);
+            logger.log(logger.type.INFO, 'Line=>('+to+'):'+JSON.stringify(content));
 
             //redis接続
             client.on('error', function (err) {
@@ -78,21 +79,21 @@ app.post('/callback', function(req, res){
             //関数呼び出し用引数
             const args = {
                 to_array: to_array,
-                text: text,
-                json: json,
+                content: content,
                 client: client,
                 callback: callback
             };
 
-            //早めに200返す
-            res.send('Receive ['+to+']:'+text);
+            //さきに200返しておく
+            res.send('Receive ['+to+']:'+JSON.stringify(content));
 
-            //parse talktype!
-            parser(args);
+            //content parse & set talktype
+            cparser(args);
         },
         
         //message dispatcher
         function(args2, callback){
+            
             messanger(args2, callback);
         }
     ],
@@ -103,7 +104,6 @@ app.post('/callback', function(req, res){
             logger.log(logger.type.ERROR, err);
             const errm = util.message('なんかエラーがおきたみたい');
             message = errm;
-            
         }
         Linebot(to_array, message);
     });

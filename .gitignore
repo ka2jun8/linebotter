@@ -8,3 +8,5 @@ esdoc.json
 dump.rdb
 logs/*
 
+
+logs/system.log

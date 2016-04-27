@@ -7,7 +7,7 @@ const logger = require('./logger');
 //TODO 〜時に〜して、というスケジューラ機能?
 
 //形態素解析的な。会話を理解したい
-function parser(args) {
+function textParser(args) {
 
     //yahoo 形態素解析web api
     const url = 'http://jlp.yahooapis.jp/MAService/V1/parse';
@@ -16,7 +16,7 @@ function parser(args) {
     // リクエストパラメータの設定
     const query = {
         'appid': process.env.YAPPID,
-        'sentence': args.text
+        'sentence': args.content.text
     };
     const options = {
         url: url,
@@ -25,21 +25,15 @@ function parser(args) {
         qs: query,
         json: true
     };
-
+    
     request.get(options, function (error, response/*, body*/) {
         const xml = response.body;
         const _json = xml2json.toJson(xml);
         const obj = JSON.parse(_json);
         const word_list = obj.ResultSet.ma_result.word_list.word;        
 
-        //引数オプション
-        let option = {
-            gkey:[] //ぐるめ検索キーワード
-        }; 
-
         let words = [];
         words.push(word_list);
-        //TODO スタンプがエラーになるっぽい?
         if(!Array.isArray(word_list)){
             words.push(word_list);
         }else{
@@ -48,13 +42,22 @@ function parser(args) {
             });
         }
 
+        //引数オプション        
+        let option = {
+            gkey: []
+        };
+
         //トークタイプの判定
         let type = Util.TALKTYPE.OTHER;
         args.client.get('talktype', (err, reply)=> {
             //一つ前のトークタイプ
             if(reply){
                 logger.log(logger.type.INFO, 'previous talktype '+reply);
-                type= JSON.parse(reply);
+                try{
+                    type= JSON.parse(reply);
+                }catch(e){
+                    type=Util.TALKTYPE.OTHER;
+                }
             }
             try{
                 //set talktype
@@ -85,14 +88,13 @@ function parser(args) {
                     words.map((word)=>{
                         if(word.pos === '名詞'){
                             option.gkey.push(word.surface);
-                            //args.client.set('groumet_key', type, redis.print);
                         }
                     });
                 }else{
                     type = Util.TALKTYPE.OTHER;
                 }
             }catch(e){
-                logger.log(logger.type.ERROR, 'ERROR: {'+typeof type+'}'+type+'/'+e);
+                logger.log(logger.type.ERROR, 'ERROR: '+JSON.stringify(type)+'/'+e);
                 type = Util.TALKTYPE.ERROR; 
             }
             
@@ -103,11 +105,8 @@ function parser(args) {
             //引数設定
             const _args = {
                 type: type,
-                words: words,
                 option: option,
                 to_array: args.to_array,
-                text: args.text,
-                json: args.json,
                 client: args.client
             };
             
@@ -118,4 +117,4 @@ function parser(args) {
 
 }
 
-module.exports = parser;
+module.exports = textParser;

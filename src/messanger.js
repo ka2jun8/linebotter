@@ -9,7 +9,9 @@ function messanger(args, callback){
     let type = args.type;
     
     try{
+
         logger.log(logger.type.INFO, JSON.stringify(type)+'/type-key:'+type.key);
+
         if(type.key===util.TALKTYPE.OTHER.key){
             callback(null, args.to_array, util.message('かにかに〜♪'));
         }
@@ -35,19 +37,22 @@ function messanger(args, callback){
         }
         else if(type.key===util.TALKTYPE.GROUMET.GROUMET_SEARCH.key){
             args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+
+            logger.log(logger.type.INFO, JSON.stringify(args.option));
+
             //ぐるなび検索
             //Grnavi(place, keyword, json, to_array, callback);
-            console.log(args.option);
 
-            let gkey = args.option.gkey;
-            logger.log(logger.type.INFO, 'search groumet:[key]:'+gkey);
             //ホットペッパー検索
-            Hpepper(gkey, args.json, args.to_array, callback);
+            Hpepper(args.option, args.to_array, callback);
             
         }else{
+            //ERROR
             callback('unknown error');
         }
+        
     }catch (err) {
+        //ERROR
         callback(err);
     }    
   
