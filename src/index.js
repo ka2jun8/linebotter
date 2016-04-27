@@ -60,13 +60,11 @@ app.post('/callback', function(req, res){
 
             // 送信相手の設定（配列）
             let to_array = [];
-            let to = json['result'][0]['content']['from'];
+            const to = json['result'][0]['content']['from'];
             to_array.push(to);
-            
-            //TODO 友達登録（名前登録）機能
-
             //受信メッセージ
             const content = json.result[0].content;
+            //TODO 友達登録（名前登録）機能 
 
             logger.log(logger.type.INFO, 'INDEX: Line=>('+to+'):'+JSON.stringify(content));
 

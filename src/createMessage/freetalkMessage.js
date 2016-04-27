@@ -3,17 +3,16 @@ const logger = require('../logger');
 const util = require('../util');
 
 //雑談api
-function freetalkMessage(args, to_array, callback) {
-
+function freetalkMessage(content, to_array, callback) {
     // DOCOMO雑談api 
     const url = 'https://api.apigw.smt.docomo.ne.jp/dialogue/v1/dialogue?APIKEY='+process.env.DOCOMOKEY;
     //logger.log(logger.type.INFO, 'freetalk docomo: ' + process.env.DOCOMOKEY);
 
-    console.log('Message: args.text'+args.text);
+    logger.log(logger.type.INFO, 'Message: args.text:'+content.text);
     
     // HotPepper リクエストパラメータの設定
     const query = {
-        'utt':args.text
+        'utt':content.text
         /*
         "context":"10001",
         "user":"99999",
@@ -34,30 +33,23 @@ function freetalkMessage(args, to_array, callback) {
     
     const options = {
         url: url,
-        proxy: process.env.PROXY,
+        //proxy: process.env.PROXY,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-        qs: query,
+        body: query,
         json: true
     };
 
-    request.post(options, function (error, response, body) {
+    request.post(options, function (error, response /*, body*/) {
         try { 
-
-            if (!error && response.statusCode == 200) {
-                if ('error' in body) {
-                    logger.log(logger.type.ERROR, 'Message: 検索エラー' + JSON.stringify(body));
-                    let errms = util.message('かにかに〜♪');
-                    callback(null, to_array, errms);
-                    return;
-                }
-            }
-            
             const res = response.body;
-            const utt = res.results.utt;
+            console.log(res);
+            const utt = res.utt;
             let message = util.message(utt);
+            
             callback(null, to_array, message);
 
         } catch (e) {
+            console.log(e);
             callback(e);
         }
 

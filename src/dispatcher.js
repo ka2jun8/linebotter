@@ -7,27 +7,15 @@ const logger = require('./logger');
 const redis = require('redis');
 
 //メッセージ-dispatcher
-function messanger(args, callback){
+function dispatcher(args, callback){
     let type = args.type;
     
     try{
-        logger.log(logger.type.INFO, 'messanger => '+'type-key:'+type.key);
+        logger.log(logger.type.INFO, 'dispatcher => '+'type-key:'+type.key);
 
         if(type.key===util.TALKTYPE.OTHER.key){
             //callback(null, args.to_array, util.message('かにかに〜♪'));
-            freetalk(args.content, args.to_array, callback);
-            return;
-        }
-        else if(type.key===util.TALKTYPE.GROUMET.GROUMET_SEARCH.key){
-            args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
-
-            logger.log(logger.type.INFO, JSON.stringify(args.option));
-
-            //ぐるなび検索
-            //Grnavi(place, keyword, json, to_array, callback);
-
-            //ホットペッパー検索
-            Hpepper(args.option, args.to_array, callback);
+            freetalk(args, args.to_array, callback);
             return;
         }
         else if(type.key===util.TALKTYPE.ERROR.key){
@@ -43,10 +31,34 @@ function messanger(args, callback){
         else if(type.key===util.TALKTYPE.GREETING.KONBANWA.key){
             plain(util.message('こんばんわかに♪'), args, callback);
         }
+        ////////////////////
+        else if(type.key===util.TALKTYPE.KAWAII.key){
+            plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
+        }
+        else if(type.key===util.TALKTYPE.ARIGATO.key){
+            plain(util.message('どういたかに'), args, callback);
+        }
+        else if(type.key===util.TALKTYPE.LOVE.key){
+            plain(util.message('あいしてるよ〜☻'), args, callback);
+        }
         //////GROUMET///////
         else if(type.key===util.TALKTYPE.GROUMET.key){
             callback(null, args.to_array, util.message('どんなところがいい？'));
-        }else{
+        }
+        else if(type.key===util.TALKTYPE.GROUMET.GROUMET_SEARCH.key){
+            args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+
+            logger.log(logger.type.INFO, JSON.stringify(args.option));
+
+            //ぐるなび検索
+            //Grnavi(place, keyword, json, to_array, callback);
+
+            //ホットペッパー検索
+            Hpepper(args.option, args.to_array, callback);
+            return;
+        }
+        ////////////////////
+        else{
             //ERROR
             callback('unknown error');
         }
@@ -58,4 +70,4 @@ function messanger(args, callback){
   
 }
 
-module.exports = messanger;
+module.exports = dispatcher;

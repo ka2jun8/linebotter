@@ -11,7 +11,7 @@ gulp.task('webpack', function () {
 });
 
 gulp.task('watch', function () {
-    gulp.watch('./src/*.js', ['webpack']);
+    gulp.watch('./src/**/*.js', ['webpack']);
 });
 
 gulp.task('run', function () {

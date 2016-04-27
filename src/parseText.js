@@ -20,7 +20,7 @@ function parseText(previous, args) {
     };
     const options = {
         url: url,
-        proxy: process.env.PROXY,
+        //proxy: process.env.PROXY,
         headers: { 'Content-Type': 'application/json; charset=UTF-8' },
         qs: query,
         json: true
@@ -33,7 +33,6 @@ function parseText(previous, args) {
         const word_list = obj.ResultSet.ma_result.word_list.word;        
 
         let words = [];
-        words.push(word_list);
         if(!Array.isArray(word_list)){
             words.push(word_list);
         }else{
@@ -41,17 +40,19 @@ function parseText(previous, args) {
                 words.push(word);
             });
         }
+        logger.log(logger.type.INFO, 'parseText words: '+JSON.stringify(words));
 
         //引数オプション        
         let option = {
-            gkey: []
+            gkey: [] //グルメ検索キーワード
         };
 
         //トークタイプの判定
-        let type = previous; //前回のtype -> 一つ前によってオートマトン
+        let type = {};
+        //previous; //前回のtype -> 一つ前によってオートマトン
         try{
             //set talktype
-            if(type.key==Util.TALKTYPE.OTHER.key){ //0
+            if(previous.key==Util.TALKTYPE.OTHER.key){ //0
                 words.map((word)=>{
                     //logger.log(logger.type.INFO, type+':'+word);
                     if(word.reading==='ごはん'){
@@ -68,6 +69,15 @@ function parseText(previous, args) {
                         type = Util.TALKTYPE.GREETING.KONBANWA;
                     }
                     ///////////////////
+                    else if(word.reading.indexOf('かわいい？')!=-1){
+                        type = Util.TALKTYPE.KAWAII;
+                    }
+                    else if(word.reading.indexOf('ありがとう')!=-1){
+                        type = Util.TALKTYPE.ARIGATO;
+                    }
+                    else if(word.reading.indexOf('すき')!=-1 || word.reading.indexOf('あいしてる')!=-1){
+                        type = Util.TALKTYPE.LOVE;
+                    }
                     else{
                         type = Util.TALKTYPE.OTHER;
                     }
@@ -75,7 +85,7 @@ function parseText(previous, args) {
                 });
             }
             ////////GROUMET////////
-            else if(type.key==Util.TALKTYPE.GROUMET.key){ //2
+            else if(previous.key==Util.TALKTYPE.GROUMET.key){ //2
                 type=Util.TALKTYPE.GROUMET.GROUMET_SEARCH; //2-1
                 words.map((word)=>{
                     if(word.pos === '名詞'){

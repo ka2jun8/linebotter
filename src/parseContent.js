@@ -22,8 +22,6 @@ function parseContent (args) {
             }
         }
         
-        //TODO 本当はここでオートマトン->そのあとコンテンツ分岐か
-        
         //Contentによって分岐
         if(args.content.contentType==1){
             //textだよ
@@ -36,8 +34,11 @@ function parseContent (args) {
         }
         else if(args.content.contentType==7){
             //locationだよ
-            location = args.content.location;
-            logger.log(logger.type.INFO, 'Parser:'+JSON.stringify(location));
+            if(previous == util.TALKTYPE.GROUMET){
+                type = util.TALKTYPE.GROUMET.GROUMET_SEARCH;
+                location = args.content.location;
+                logger.log(logger.type.INFO, 'Parser:'+JSON.stringify(location));
+            }
         }
         else if(args.content.contentType==8){
             //stickerスタンプだよ
@@ -60,7 +61,7 @@ function parseContent (args) {
             to_array: args.to_array,
             client: args.client
         };
-        //先頭nullで成功を示す
+        //先頭nullで成功を示す => dispatcher
         args.callback(null, _args);
 
     });

@@ -1,4 +1,5 @@
 
+const logger = require('./logger');
 const Util = {
     //トークタイプ
     TALKTYPE : {
@@ -29,6 +30,18 @@ const Util = {
                 value: '*'
             }
         },
+        KAWAII: {
+            key: '9-1',
+            value: 'かわいい？'
+        },
+        ARIGATO: {
+            key: '9-2',
+            value: 'ありがと'
+        },
+        LOVE: {
+            key: '9-3',
+            value: ['すき', 'あいしてる']
+        },
         ERROR: {
             key: '-1',
             value: '*'
@@ -37,6 +50,7 @@ const Util = {
 
     //テキストセット
     message: (text)=>{
+        logger.log(logger.type.INFO, 'create message *<- '+text);
         let obj = [{
             'contentType': 1,
             'text': text

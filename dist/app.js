@@ -110,11 +110,9 @@
 	        var to_array = [];
 	        var to = json['result'][0]['content']['from'];
 	        to_array.push(to);
-
-	        //TODO 友達登録（名前登録）機能
-
 	        //受信メッセージ
 	        var content = json.result[0].content;
+	        //TODO 友達登録（名前登録）機能
 
 	        logger.log(logger.type.INFO, 'INDEX: Line=>(' + to + '):' + JSON.stringify(content));
 
@@ -207,8 +205,6 @@
 	            }
 	        }
 
-	        //TODO 本当はここでオートマトン->そのあとコンテンツ分岐か
-
 	        //Contentによって分岐
 	        if (args.content.contentType == 1) {
 	            //textだよ
@@ -219,8 +215,11 @@
 	            //
 	        } else if (args.content.contentType == 7) {
 	                //locationだよ
-	                location = args.content.location;
-	                logger.log(logger.type.INFO, 'Parser:' + JSON.stringify(location));
+	                if (previous == util.TALKTYPE.GROUMET) {
+	                    type = util.TALKTYPE.GROUMET.GROUMET_SEARCH;
+	                    location = args.content.location;
+	                    logger.log(logger.type.INFO, 'Parser:' + JSON.stringify(location));
+	                }
 	            } else if (args.content.contentType == 8) {}
 	            //stickerスタンプだよ
 	            //
@@ -242,7 +241,7 @@
 	            to_array: args.to_array,
 	            client: args.client
 	        };
-	        //先頭nullで成功を示す
+	        //先頭nullで成功を示す => dispatcher
 	        args.callback(null, _args);
 	    });
 	}
@@ -277,7 +276,7 @@
 	    };
 	    var options = {
 	        url: url,
-	        proxy: process.env.PROXY,
+	        //proxy: process.env.PROXY,
 	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
 	        qs: query,
 	        json: true
@@ -290,7 +289,6 @@
 	        var word_list = obj.ResultSet.ma_result.word_list.word;
 
 	        var words = [];
-	        words.push(word_list);
 	        if (!Array.isArray(word_list)) {
 	            words.push(word_list);
 	        } else {
@@ -298,17 +296,19 @@
 	                words.push(word);
 	            });
 	        }
+	        logger.log(logger.type.INFO, 'parseText words: ' + JSON.stringify(words));
 
 	        //引数オプション       
 	        var option = {
-	            gkey: []
+	            gkey: [] //グルメ検索キーワード
 	        };
 
 	        //トークタイプの判定
-	        var type = previous; //前回のtype -> 一つ前によってオートマトン
+	        var type = {};
+	        //previous; //前回のtype -> 一つ前によってオートマトン
 	        try {
 	            //set talktype
-	            if (type.key == Util.TALKTYPE.OTHER.key) {
+	            if (previous.key == Util.TALKTYPE.OTHER.key) {
 	                //0
 	                words.map(function (word) {
 	                    //logger.log(logger.type.INFO, type+':'+word);
@@ -324,14 +324,20 @@
 	                            type = Util.TALKTYPE.GREETING.KONBANWA;
 	                        }
 	                        ///////////////////
-	                        else {
+	                        else if (word.reading.indexOf('かわいい？') != -1) {
+	                                type = Util.TALKTYPE.KAWAII;
+	                            } else if (word.reading.indexOf('ありがとう') != -1) {
+	                                type = Util.TALKTYPE.ARIGATO;
+	                            } else if (word.reading.indexOf('すき') != -1 || word.reading.indexOf('あいしてる') != -1) {
+	                                type = Util.TALKTYPE.LOVE;
+	                            } else {
 	                                type = Util.TALKTYPE.OTHER;
 	                            }
 	                    ///////////////////
 	                });
 	            }
 	            ////////GROUMET////////
-	            else if (type.key == Util.TALKTYPE.GROUMET.key) {
+	            else if (previous.key == Util.TALKTYPE.GROUMET.key) {
 	                    //2
 	                    type = Util.TALKTYPE.GROUMET.GROUMET_SEARCH; //2-1
 	                    words.map(function (word) {
@@ -388,10 +394,11 @@
 
 /***/ },
 /* 9 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
+	var logger = __webpack_require__(10);
 	var Util = {
 	    //トークタイプ
 	    TALKTYPE: {
@@ -422,6 +429,18 @@
 	                value: '*'
 	            }
 	        },
+	        KAWAII: {
+	            key: '9-1',
+	            value: 'かわいい？'
+	        },
+	        ARIGATO: {
+	            key: '9-2',
+	            value: 'ありがと'
+	        },
+	        LOVE: {
+	            key: '9-3',
+	            value: ['すき', 'あいしてる']
+	        },
 	        ERROR: {
 	            key: '-1',
 	            value: '*'
@@ -430,6 +449,7 @@
 
 	    //テキストセット
 	    message: function message(text) {
+	        logger.log(logger.type.INFO, 'create message *<- ' + text);
 	        var obj = [{
 	            'contentType': 1,
 	            'text': text
@@ -557,26 +577,15 @@
 	var redis = __webpack_require__(8);
 
 	//メッセージ-dispatcher
-	function messanger(args, callback) {
+	function dispatcher(args, callback) {
 	    var type = args.type;
 
 	    try {
-	        logger.log(logger.type.INFO, 'messanger => ' + 'type-key:' + type.key);
+	        logger.log(logger.type.INFO, 'dispatcher => ' + 'type-key:' + type.key);
 
 	        if (type.key === util.TALKTYPE.OTHER.key) {
 	            //callback(null, args.to_array, util.message('かにかに〜♪'));
-	            freetalk(args.content, args.to_array, callback);
-	            return;
-	        } else if (type.key === util.TALKTYPE.GROUMET.GROUMET_SEARCH.key) {
-	            args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
-
-	            logger.log(logger.type.INFO, JSON.stringify(args.option));
-
-	            //ぐるなび検索
-	            //Grnavi(place, keyword, json, to_array, callback);
-
-	            //ホットペッパー検索
-	            Hpepper(args.option, args.to_array, callback);
+	            freetalk(args, args.to_array, callback);
 	            return;
 	        } else if (type.key === util.TALKTYPE.ERROR.key) {
 	            plain(util.message('ちょっと理解不能…'), args, callback);
@@ -589,20 +598,41 @@
 	            } else if (type.key === util.TALKTYPE.GREETING.KONBANWA.key) {
 	                plain(util.message('こんばんわかに♪'), args, callback);
 	            }
-	            //////GROUMET///////
-	            else if (type.key === util.TALKTYPE.GROUMET.key) {
-	                    callback(null, args.to_array, util.message('どんなところがいい？'));
-	                } else {
-	                    //ERROR
-	                    callback('unknown error');
+	            ////////////////////
+	            else if (type.key === util.TALKTYPE.KAWAII.key) {
+	                    plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
+	                } else if (type.key === util.TALKTYPE.ARIGATO.key) {
+	                    plain(util.message('どういたかに'), args, callback);
+	                } else if (type.key === util.TALKTYPE.LOVE.key) {
+	                    plain(util.message('あいしてるよ〜☻'), args, callback);
 	                }
+	                //////GROUMET///////
+	                else if (type.key === util.TALKTYPE.GROUMET.key) {
+	                        callback(null, args.to_array, util.message('どんなところがいい？'));
+	                    } else if (type.key === util.TALKTYPE.GROUMET.GROUMET_SEARCH.key) {
+	                        args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+
+	                        logger.log(logger.type.INFO, JSON.stringify(args.option));
+
+	                        //ぐるなび検索
+	                        //Grnavi(place, keyword, json, to_array, callback);
+
+	                        //ホットペッパー検索
+	                        Hpepper(args.option, args.to_array, callback);
+	                        return;
+	                    }
+	                    ////////////////////
+	                    else {
+	                            //ERROR
+	                            callback('unknown error');
+	                        }
 	    } catch (err) {
 	        //ERROR
 	        callback(err);
 	    }
 	}
 
-	module.exports = messanger;
+	module.exports = dispatcher;
 
 /***/ },
 /* 14 */
@@ -729,17 +759,16 @@
 	var util = __webpack_require__(9);
 
 	//雑談api
-	function freetalkMessage(args, to_array, callback) {
-
+	function freetalkMessage(content, to_array, callback) {
 	    // DOCOMO雑談api
 	    var url = 'https://api.apigw.smt.docomo.ne.jp/dialogue/v1/dialogue?APIKEY=' + process.env.DOCOMOKEY;
 	    //logger.log(logger.type.INFO, 'freetalk docomo: ' + process.env.DOCOMOKEY);
 
-	    console.log('Message: args.text' + args.text);
+	    logger.log(logger.type.INFO, 'Message: args.text:' + content.text);
 
 	    // HotPepper リクエストパラメータの設定
 	    var query = {
-	        'utt': args.text
+	        'utt': content.text
 	        /*
 	        "context":"10001",
 	        "user":"99999",
@@ -760,29 +789,22 @@
 
 	    var options = {
 	        url: url,
-	        proxy: process.env.PROXY,
+	        //proxy: process.env.PROXY,
 	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-	        qs: query,
+	        body: query,
 	        json: true
 	    };
 
-	    request.post(options, function (error, response, body) {
+	    request.post(options, function (error, response /*, body*/) {
 	        try {
-
-	            if (!error && response.statusCode == 200) {
-	                if ('error' in body) {
-	                    logger.log(logger.type.ERROR, 'Message: 検索エラー' + JSON.stringify(body));
-	                    var errms = util.message('かにかに〜♪');
-	                    callback(null, to_array, errms);
-	                    return;
-	                }
-	            }
-
 	            var res = response.body;
-	            var utt = res.results.utt;
+	            console.log(res);
+	            var utt = res.utt;
 	            var message = util.message(utt);
+
 	            callback(null, to_array, message);
 	        } catch (e) {
+	            console.log(e);
 	            callback(e);
 	        }
 	    });
@@ -797,10 +819,11 @@
 	'use strict';
 
 	var util = __webpack_require__(9);
-	//const logger = require('./logger');
+	var logger = __webpack_require__(10);
 	var redis = __webpack_require__(8);
 
 	function plainTextMessage(text, args, callback) {
+	    logger.log(logger.type.INFO, 'Parser: set talktype ' + util.TALKTYPE.OTHER);
 	    args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
 	    callback(null, args.to_array, text);
 	}
