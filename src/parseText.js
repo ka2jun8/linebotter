@@ -32,6 +32,7 @@ function parseText(previous, args) {
         const obj = JSON.parse(_json);
         const word_list = obj.ResultSet.ma_result.word_list.word;        
 
+        let text = args.content.text;
         let words = [];
         if(!Array.isArray(word_list)){
             words.push(word_list);
@@ -44,7 +45,8 @@ function parseText(previous, args) {
 
         //引数オプション        
         let option = {
-            gkey: [] //グルメ検索キーワード
+            gkey: [], //グルメ検索キーワード
+            time: '' //アラーム分後
         };
 
         //トークタイプの判定
@@ -59,25 +61,43 @@ function parseText(previous, args) {
                         type = Util.TALKTYPE.GROUMET;
                     }
                     /////GREETING//////
-                    else if(word.reading.indexOf('おはよう')!=-1){
+                    else if(word.reading.indexOf('おはよ')!=-1){
                         type = Util.TALKTYPE.GREETING.OHA;
                     }
-                    else if(word.reading.indexOf('こんにち')!=-1){
+                    else if(word.reading.indexOf('こんにち')!=-1
+                        || word.reading.indexOf('ハロー')!=-1){
                         type = Util.TALKTYPE.GREETING.KONNICHIWA;
                     }
                     else if(word.reading.indexOf('こんばん')!=-1){
                         type = Util.TALKTYPE.GREETING.KONBANWA;
                     }
                     ///////////////////
-                    else if(word.reading.indexOf('かわいい')!=-1){
-                        type = Util.TALKTYPE.KAWAII;
+                    else if(text==='かわいい？'){
+                        type = Util.TALKTYPE.TALK.KAWAII;
                     }
-                    else if(word.reading.indexOf('ありがとう')!=-1){
-                        type = Util.TALKTYPE.ARIGATO;
+                    else if(word.reading.indexOf('ありがと')!=-1){
+                        type = Util.TALKTYPE.TALK.ARIGATO;
                     }
                     else if(word.reading.indexOf('すき')!=-1 || word.reading.indexOf('あいしてる')!=-1){
-                        type = Util.TALKTYPE.LOVE;
+                        type = Util.TALKTYPE.TALK.LOVE;
                     }
+                    else if(word.reading.indexOf('なんじ')!=-1){
+                        type = Util.TALKTYPE.TALK.WHATTIME;
+                    }
+                    else if(word.reading.indexOf('あらーむ')!=-1){
+                        type = Util.TALKTYPE.ALARM;
+                    }
+                    /////////友達登録///////////
+                    else if(word.reading.indexOf('ともだち')!=-1){
+                        type = Util.TALKTYPE.FRIEND;
+                    }
+                    else if(text==='友達登録'){
+                        type = Util.TALKTYPE.FRIEND.REGISTER;
+                    }
+                    else if(text==='友達解除'){
+                        type = Util.TALKTYPE.FRIEND.UNREGISTER;
+                    }
+                    ///////////////////////////
                     else{
                         type = Util.TALKTYPE.OTHER;
                     }
@@ -92,7 +112,29 @@ function parseText(previous, args) {
                         option.gkey.push(word.surface);
                     }
                 });
-            }else{
+            }
+            ////////ALARM////////
+            else if(previous.key==Util.TALKTYPE.ALARM.key){ //
+                type=Util.TALKTYPE.OTHER; //
+                words.map((word)=>{
+                    console.log('word is' +word);
+                    if(isFinite(word.surface)){
+                        type=Util.TALKTYPE.ALARM.ACCEPT;
+                        option.time=word.surface;
+                    }
+                });
+            }
+            ////////FRIEND////////
+            else if(previous.key==Util.TALKTYPE.FRIEND.key){ //
+                type=Util.TALKTYPE.ERROR; //
+                words.map((word)=>{
+                    if(word.reading.indexOf('する')!=-1){
+                        type = Util.TALKTYPE.FRIEND.REGISTER;
+                    }
+                });
+            }
+            ////////////////////////
+            else{
                 type = Util.TALKTYPE.OTHER;
             }
             ////////////////////////
@@ -108,7 +150,7 @@ function parseText(previous, args) {
         //引数設定
         const _args = {
             type: type,
-            text: args.content.text,
+            text: text,
             option: option,
             to_array: args.to_array,
             client: args.client

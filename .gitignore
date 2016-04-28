@@ -5,8 +5,7 @@ Dockerfile
 docker-compose.yml
 esdoc
 esdoc.json
-dump.rdb
 logs/*
-
-
 logs/system.log
+
+dump.rdb

@@ -25,16 +25,16 @@ app.use(bodyParser.json());                        // JSONのパースを楽に�
 //app.use(express.static('public'));
 
 //TODO
-//今何時？
 //並列処理＋エラー処理
-//署名検証 
 //エスケープシーケンス
-//画像認識
-//スタンプ対応
-//雑談API
+//署名検証 
+//画像認識 「これ何？」
+//「〜〜まで行きたい」
 //ここから〜〜までの行き方 //位置情報
-//あらーむ
+//スタンプ対応
+//傘必要な日は毎朝教えて欲しい
 //健康
+//みんな（友達）に発言する
 //redis search & register
 //アラーム時間差で
 
@@ -64,7 +64,6 @@ app.post('/callback', function(req, res){
             to_array.push(to);
             //受信メッセージ
             const content = json.result[0].content;
-            //TODO 友達登録（名前登録）機能 
 
             logger.log(logger.type.INFO, 'INDEX: Line=>('+to+'):'+JSON.stringify(content));
 
@@ -89,7 +88,15 @@ app.post('/callback', function(req, res){
         },
         
         //message dispatcher
-        function(args2, callback){
+        function(_args, callback){
+            
+            const args2 = {
+                type: _args.type,
+                text: _args.text,
+                option: _args.option,
+                to_array: _args.to_array,
+                client: _args.client
+            };
             
             dispatcher(args2, callback);
         }

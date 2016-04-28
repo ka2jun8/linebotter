@@ -8,7 +8,7 @@ function freetalkMessage(content, to_array, callback) {
     const url = 'https://api.apigw.smt.docomo.ne.jp/dialogue/v1/dialogue?APIKEY='+process.env.DOCOMOKEY;
     //logger.log(logger.type.INFO, 'freetalk docomo: ' + process.env.DOCOMOKEY);
 
-    logger.log(logger.type.INFO, 'Message: args.text:'+content.text);
+    logger.log(logger.type.INFO, 'FreetalkMessage: args.text:'+content.text);
     
     // HotPepper リクエストパラメータの設定
     const query = {
@@ -42,8 +42,9 @@ function freetalkMessage(content, to_array, callback) {
     request.post(options, function (error, response /*, body*/) {
         try { 
             const res = response.body;
-            console.log(res);
-            const utt = res.utt;
+            let utt = res.utt;
+            
+            //TODO 語尾をかえる？
             let message = util.message(utt);
             
             callback(null, to_array, message);
