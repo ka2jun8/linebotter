@@ -283,7 +283,7 @@
 	    };
 	    var options = {
 	        url: url,
-	        proxy: process.env.PROXY,
+	        //proxy: process.env.PROXY,
 	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
 	        qs: query,
 	        json: true
@@ -683,9 +683,7 @@
 	var util = __webpack_require__(9);
 	var logger = __webpack_require__(10);
 	var redis = __webpack_require__(8);
-	//alarm
-	var Linebot = __webpack_require__(12);
-	var schedule = __webpack_require__(17);
+	var alarmMessage = __webpack_require__(17);
 
 	//メッセージ-dispatcher
 	function dispatcher(args, callback) {
@@ -712,61 +710,54 @@
 	            /////////友達登録////////////
 	            else if (type.key === util.TALKTYPE.FRIEND.key) {
 	                    args.next = util.TALKTYPE.FRIEND;
-	                    plain(util.message('友達登録する？'), args, callback);
+	                    plain(util.message('友達登録するかに？'), args, callback);
 	                } else if (type.key === util.TALKTYPE.FRIEND.REGISTER.key) {
 	                    args.client.set('friend.' + args.to_array[0], 'true', redis.print);
-	                    plain(util.message('友達登録したよ〜^^'), args, callback);
+	                    plain(util.message('友達登録したかに〜^^'), args, callback);
 	                } else if (type.key === util.TALKTYPE.FRIEND.UNREGISTER.key) {
 	                    args.client.set('friend.' + args.to_array[0], 'false', redis.print);
-	                    plain(util.message('友達解除したよ〜涙'), args, callback);
+	                    plain(util.message('友達解除したかに〜涙'), args, callback);
 	                }
 	                //////////アラーム////////////
 	                else if (type.key === util.TALKTYPE.ALARM.key) {
 	                        args.next = util.TALKTYPE.ALARM;
-	                        plain(util.message('何分後に通知してほしい？'), args, callback);
+	                        plain(util.message('何分後に通知してほしいかに？'), args, callback);
 	                    } else if (type.key === util.TALKTYPE.ALARM.ACCEPT.key) {
-	                        //TODO アラーム機能
-	                        var now = util.calcTime(0);
-	                        var setDate = new Date(now.year, now.month, now.date, now.hour, now.min + args.option.time, now.sec);
-	                        var job = schedule.scheduleJob(setDate, function () {
-	                            logger.log(logger.type.INFO, 'アラート実行');
-	                            Linebot(args.to_array, util.message('わー！'));
-	                        });
-	                        plain(util.message('覚えてたら通知するね！笑   ...あ、もう忘れた'), args, callback);
+	                        alarmMessage(args);
+	                        plain(util.message('覚えてたら通知するかに！笑   ...あ、もう忘れたかに'), args, callback);
 	                    }
 	                    //////GROUMET///////
 	                    else if (type.key === util.TALKTYPE.GROUMET.key) {
 	                            args.next = util.TALKTYPE.GROUMET;
-	                            plain(util.message('どんなところがいい？'), args, callback);
-	                            //callback(null, args.to_array, util.message('どんなところがいい？'));
+	                            plain(util.message('どんなところがいいかに？'), args, callback);
 	                        } else if (type.key === util.TALKTYPE.GROUMET.GROUMET_SEARCH.key) {
-	                                args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+	                            args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
 
-	                                logger.log(logger.type.INFO, JSON.stringify(args.option));
+	                            logger.log(logger.type.INFO, JSON.stringify(args.option));
 
-	                                //ぐるなび検索
-	                                //Grnavi(place, keyword, json, to_array, callback);
+	                            //ぐるなび検索
+	                            //Grnavi(place, keyword, json, to_array, callback);
 
-	                                //ホットペッパー検索
-	                                Hpepper(args.option, args.to_array, callback);
-	                                return;
+	                            //ホットペッパー検索
+	                            Hpepper(args.option, args.to_array, callback);
+	                            return;
+	                        }
+	                        ////////////////////
+	                        else if (type.key === util.TALKTYPE.TALK.KAWAII.key) {
+	                                plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
+	                            } else if (type.key === util.TALKTYPE.TALK.ARIGATO.key) {
+	                                plain(util.message('どういたかに'), args, callback);
+	                            } else if (type.key === util.TALKTYPE.TALK.LOVE.key) {
+	                                plain(util.message('あいしてるかに〜☻'), args, callback);
+	                            } else if (type.key === util.TALKTYPE.TALK.WHATTIME.key) {
+	                                var time = util.calcTime(2);
+	                                plain(util.message('いまは' + time + 'だよ'), args, callback);
 	                            }
 	                            ////////////////////
-	                            else if (type.key === util.TALKTYPE.TALK.KAWAII.key) {
-	                                    plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
-	                                } else if (type.key === util.TALKTYPE.TALK.ARIGATO.key) {
-	                                    plain(util.message('どういたかに'), args, callback);
-	                                } else if (type.key === util.TALKTYPE.TALK.LOVE.key) {
-	                                    plain(util.message('あいしてるよ〜☻'), args, callback);
-	                                } else if (type.key === util.TALKTYPE.TALK.WHATTIME.key) {
-	                                    var time = util.calcTime(2);
-	                                    plain(util.message('いまは' + time + 'だよ'), args, callback);
+	                            else {
+	                                    //ERROR
+	                                    callback('unknown error');
 	                                }
-	                                ////////////////////
-	                                else {
-	                                        //ERROR
-	                                        callback('unknown error');
-	                                    }
 	    } catch (err) {
 	        //ERROR
 	        callback(err);
@@ -930,7 +921,7 @@
 
 	    var options = {
 	        url: url,
-	        proxy: process.env.PROXY,
+	        //proxy: process.env.PROXY,
 	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
 	        body: query,
 	        json: true
@@ -942,6 +933,14 @@
 	            var utt = res.utt;
 
 	            //TODO 語尾をかえる？
+	            var tmp = utt.substring(0, utt.length - 1);
+	            var last = utt.substring(utt.length - 1);
+	            if (last == '。' || last == '！' || last == '？') {
+	                utt = tmp + 'かに' + last;
+	            } else {
+	                utt = utt + 'かに';
+	            }
+
 	            var message = util.message(utt);
 
 	            callback(null, to_array, message);
@@ -979,6 +978,34 @@
 
 /***/ },
 /* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	//alarm
+	var schedule = __webpack_require__(18);
+	var Linebot = __webpack_require__(12);
+	var util = __webpack_require__(9);
+
+	function alarmMessage(args) {
+	    //TODO アラーム機能
+	    var now = util.calcTime(0);
+	    var min = Number(now.min) + Number(args.option.time);
+	    var setDate = new Date(now.year, now.month, now.day, now.hour, min, now.sec);
+	    console.log(setDate);
+	    var job = schedule.scheduleJob(setDate, function (_args) {
+	        console.log('アラート実行' + _args);
+	        Linebot(args.to_array, util.message('わー！'));
+	    }.bind(null, args));
+	    job.on('scheduled', function () {
+	        console.log('予定が登録されました');
+	    });
+	}
+
+	module.exports = alarmMessage;
+
+/***/ },
+/* 18 */
 /***/ function(module, exports) {
 
 	module.exports = require("node-schedule");
