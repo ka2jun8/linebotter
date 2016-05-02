@@ -5,16 +5,13 @@ const util = require('../util');
 
 function alarmMessage(args){  
     //TODO アラーム機能
-    const now = util.calcTime(0);
-    const min = Number(now.min)+Number(args.option.time);
-    let setDate = new Date(now.year, now.month, now.day, now.hour, min, now.sec);
-    console.log(setDate);
+    const setDate = new Date();
+    setDate.setMinutes(setDate.getMinutes() + Number(args.option.time));
     let job = schedule.scheduleJob(
-        setDate,  
-        function(_args){
-            console.log('アラート実行'+_args);
-            Linebot(args.to_array, util.message('わー！'));
-        }.bind(null, args)
+        setDate,
+        function(){
+            Linebot(args.to_array, util.message('時間が経ったよ！'));
+        }
     );
     job.on('scheduled', function () {
         console.log('予定が登録されました');

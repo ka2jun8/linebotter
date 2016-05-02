@@ -47,7 +47,10 @@ function freetalkMessage(content, to_array, callback) {
             //TODO 語尾をかえる？
             let tmp = utt.substring(0, utt.length-1);
             let last = utt.substring(utt.length-1);
-            if(last == '。' || last == '！' || last == '？'){
+            if(last === ' '){
+                utt = tmp;
+            }
+            else if(last === '。' || last === '！' || last === '？'){
                 utt = tmp + 'かに' + last;
             }else {
                 utt = utt + 'かに';

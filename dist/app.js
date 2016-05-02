@@ -153,6 +153,7 @@
 	    function (err, to_array, message) {
 	        if (err) {
 	            logger.log(logger.type.ERROR, err);
+	            client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
 	            var errm = util.message('なんかエラーがおきたみたい');
 	            message = errm;
 	        }
@@ -264,7 +265,7 @@
 	var request = __webpack_require__(6);
 	var xml2json = __webpack_require__(7);
 	var redis = __webpack_require__(8);
-	var Util = __webpack_require__(9);
+	var util = __webpack_require__(9);
 	var logger = __webpack_require__(10);
 
 	//TODO 〜時に〜して、というスケジューラ機能?
@@ -309,7 +310,8 @@
 	        //引数オプション       
 	        var option = {
 	            gkey: [], //グルメ検索キーワード
-	            time: '' //アラーム分後
+	            time: '', //アラーム分後
+	            goto: [] //行きたいところ
 	        };
 
 	        //トークタイプの判定
@@ -317,88 +319,95 @@
 	        //previous; //前回のtype -> 一つ前によってオートマトン
 	        try {
 	            //set talktype
-	            if (previous.key == Util.TALKTYPE.OTHER.key) {
+	            if (previous.key == util.TALKTYPE.OTHER.key) {
 	                //0
-	                words.map(function (word) {
-	                    //logger.log(logger.type.INFO, type+':'+word);
-	                    if (word.reading === 'ごはん') {
-	                        type = Util.TALKTYPE.GROUMET;
+	                //logger.log(logger.type.INFO, type+':'+word);
+	                if (util.checkText(util.TALKTYPE.GROUMET.value, words, text)) {
+	                    type = util.TALKTYPE.GROUMET;
+	                }
+	                /////GREETING//////
+	                else if (util.checkText(util.TALKTYPE.GREETING.OHA.value, words, text)) {
+	                        type = util.TALKTYPE.GREETING.OHA;
+	                    } else if (util.checkText(util.TALKTYPE.GREETING.KONNICHIWA.value, words, text)) {
+	                        type = util.TALKTYPE.GREETING.KONNICHIWA;
+	                    } else if (util.checkText(util.TALKTYPE.GREETING.KONBANWA.value, words, text)) {
+	                        type = util.TALKTYPE.GREETING.KONBANWA;
 	                    }
-	                    /////GREETING//////
-	                    else if (word.reading.indexOf('おはよ') != -1) {
-	                            type = Util.TALKTYPE.GREETING.OHA;
-	                        } else if (word.reading.indexOf('こんにち') != -1 || word.reading.indexOf('ハロー') != -1) {
-	                            type = Util.TALKTYPE.GREETING.KONNICHIWA;
-	                        } else if (word.reading.indexOf('こんばん') != -1) {
-	                            type = Util.TALKTYPE.GREETING.KONBANWA;
+	                    ////////TALK//////////
+	                    else if (util.checkText(util.TALKTYPE.TALK.KAWAII.value, words, text)) {
+	                            type = util.TALKTYPE.TALK.KAWAII;
+	                        } else if (util.checkText(util.TALKTYPE.TALK.ARIGATO.value, words, text)) {
+	                            type = util.TALKTYPE.TALK.ARIGATO;
+	                        } else if (util.checkText(util.TALKTYPE.TALK.LOVE.value, words, text)) {
+	                            type = util.TALKTYPE.TALK.LOVE;
+	                        } else if (util.checkText(util.TALKTYPE.TALK.WHATTIME.value, words, text)) {
+	                            type = util.TALKTYPE.TALK.WHATTIME;
 	                        }
-	                        ///////////////////
-	                        else if (text === 'かわいい？') {
-	                                type = Util.TALKTYPE.TALK.KAWAII;
-	                            } else if (word.reading.indexOf('ありがと') != -1) {
-	                                type = Util.TALKTYPE.TALK.ARIGATO;
-	                            } else if (word.reading.indexOf('すき') != -1 || word.reading.indexOf('あいしてる') != -1) {
-	                                type = Util.TALKTYPE.TALK.LOVE;
-	                            } else if (word.reading.indexOf('なんじ') != -1) {
-	                                type = Util.TALKTYPE.TALK.WHATTIME;
-	                            } else if (word.reading.indexOf('あらーむ') != -1) {
-	                                type = Util.TALKTYPE.ALARM;
+	                        ////////アラーム////////////
+	                        else if (util.checkText(util.TALKTYPE.ALARM.value, words, text)) {
+	                                type = util.TALKTYPE.ALARM;
 	                            }
 	                            /////////友達登録///////////
-	                            else if (word.reading.indexOf('ともだち') != -1) {
-	                                    type = Util.TALKTYPE.FRIEND;
-	                                } else if (text === '友達登録') {
-	                                    type = Util.TALKTYPE.FRIEND.REGISTER;
-	                                } else if (text === '友達解除') {
-	                                    type = Util.TALKTYPE.FRIEND.UNREGISTER;
+	                            else if (util.checkText(util.TALKTYPE.FRIEND.value, words, text)) {
+	                                    type = util.TALKTYPE.FRIEND;
+	                                } else if (util.checkText(util.TALKTYPE.FRIEND.REGISTER.value, words, text)) {
+	                                    type = util.TALKTYPE.FRIEND.REGISTER;
+	                                } else if (util.checkText(util.TALKTYPE.FRIEND.UNREGISTER.value, words, text)) {
+	                                    type = util.TALKTYPE.FRIEND.UNREGISTER;
 	                                }
-	                                ///////////////////////////
-	                                else {
-	                                        type = Util.TALKTYPE.OTHER;
+	                                ////////マップ////////////
+	                                else if (util.checkText(util.TALKTYPE.GMAP.WHERE.value, words, text)) {
+	                                        type = util.TALKTYPE.GMAP.WHERE;
+	                                        option.maptarget = text;
+	                                    } else if (util.checkText(util.TALKTYPE.GMAP.GOTO.value, words, text)) {
+	                                        type = util.TALKTYPE.GMAP.GOTO;
+	                                        option.goto = text;
 	                                    }
-	                    ///////////////////
-	                });
+	                                    ///////////////////////////
+	                                    else {
+	                                            type = util.TALKTYPE.OTHER;
+	                                        }
+	                ///////////////////
 	            }
 	            ////////GROUMET////////
-	            else if (previous.key == Util.TALKTYPE.GROUMET.key) {
+	            else if (previous.key == util.TALKTYPE.GROUMET.key) {
 	                    //2
-	                    type = Util.TALKTYPE.GROUMET.GROUMET_SEARCH; //2-1
-	                    words.map(function (word) {
+	                    type = util.TALKTYPE.GROUMET.GROUMET_SEARCH; //2-1
+	                    words.forEach(function (word) {
 	                        if (word.pos === '名詞') {
 	                            option.gkey.push(word.surface);
 	                        }
 	                    });
 	                }
 	                ////////ALARM////////
-	                else if (previous.key == Util.TALKTYPE.ALARM.key) {
+	                else if (previous.key == util.TALKTYPE.ALARM.key) {
 	                        //
-	                        type = Util.TALKTYPE.OTHER; //
-	                        words.map(function (word) {
-	                            console.log('word is' + word);
+	                        type = util.TALKTYPE.OTHER; //
+	                        words.forEach(function (word) {
 	                            if (isFinite(word.surface)) {
-	                                type = Util.TALKTYPE.ALARM.ACCEPT;
+	                                type = util.TALKTYPE.ALARM.ACCEPT;
 	                                option.time = word.surface;
 	                            }
 	                        });
 	                    }
 	                    ////////FRIEND////////
-	                    else if (previous.key == Util.TALKTYPE.FRIEND.key) {
+	                    else if (previous.key == util.TALKTYPE.FRIEND.key) {
 	                            //
-	                            type = Util.TALKTYPE.ERROR; //
-	                            words.map(function (word) {
+	                            type = util.TALKTYPE.ERROR; //
+	                            words.forEach(function (word) {
 	                                if (word.reading.indexOf('する') != -1) {
-	                                    type = Util.TALKTYPE.FRIEND.REGISTER;
+	                                    type = util.TALKTYPE.FRIEND.REGISTER;
 	                                }
 	                            });
 	                        }
 	                        ////////////////////////
 	                        else {
-	                                type = Util.TALKTYPE.OTHER;
+	                                type = util.TALKTYPE.OTHER;
 	                            }
 	            ////////////////////////
 	        } catch (e) {
 	            logger.log(logger.type.ERROR, 'ERROR: ' + JSON.stringify(type) + '/' + e);
-	            type = Util.TALKTYPE.ERROR;
+	            type = util.TALKTYPE.ERROR;
 	        }
 
 	        //Redis にtalktypeを保管
@@ -451,26 +460,26 @@
 	    TALKTYPE: {
 	        OTHER: {
 	            key: '0',
-	            value: '*'
+	            value: ['*']
 	        },
 	        GREETING: {
 	            key: '1',
 	            OHA: {
 	                key: '1-1',
-	                value: 'おは'
+	                value: ['おは']
 	            },
 	            KONNICHIWA: {
 	                key: '1-2',
-	                value: 'こんにち'
+	                value: ['こんにち']
 	            },
 	            KONBANWA: {
 	                key: '1-3',
-	                value: 'こんばん'
+	                value: ['こんばん']
 	            }
 	        },
 	        GROUMET: {
 	            key: '2',
-	            value: 'ごはん',
+	            value: ['ごはん', 'めし'],
 	            GROUMET_SEARCH: {
 	                key: '2-1',
 	                value: '*'
@@ -478,32 +487,42 @@
 	        },
 	        FRIEND: {
 	            key: '3',
-	            value: 'ともだち',
+	            value: ['ともだち'],
 	            REGISTER: {
 	                key: '3-1',
-	                value: '友達登録'
+	                value: ['友達登録']
 	            },
 	            UNREGISTER: {
 	                key: '3-2',
-	                value: '友達解除'
+	                value: ['友達解除']
 	            }
 	        },
 	        ALARM: {
 	            key: '4',
-	            value: 'あらーむ',
+	            value: ['あらーむ'],
 	            ACCEPT: {
 	                key: '4-1',
-	                value: 'りょうかい'
+	                value: ['\d']
+	            }
+	        },
+	        GMAP: {
+	            WHERE: {
+	                key: '5-1',
+	                value: ['ってどこ？']
+	            },
+	            GOTO: {
+	                key: '5-2',
+	                value: ['いきかた', '行き方', '\^\.\+から\.\+まで\$']
 	            }
 	        },
 	        TALK: {
 	            KAWAII: {
 	                key: '9-1',
-	                value: 'かわいい？'
+	                value: ['かわいい？']
 	            },
 	            ARIGATO: {
 	                key: '9-2',
-	                value: 'ありがと'
+	                value: ['ありがと']
 	            },
 	            LOVE: {
 	                key: '9-3',
@@ -511,13 +530,34 @@
 	            },
 	            WHATTIME: {
 	                key: '9-4',
-	                value: ['いまなんじ？']
+	                value: ['いまなんじ', '今なんじ', '今何時']
 	            }
 	        },
 	        ERROR: {
 	            key: '-1',
 	            value: '*'
 	        }
+	    },
+
+	    //テキスト判定
+	    checkText: function checkText(targets, words, text) {
+	        var result = false;
+	        targets.forEach(function (target) {
+	            var reg = new RegExp(target);
+	            if (text.match(reg)) {
+	                console.log('regExp true');
+	                result = true;
+	            }
+	            if (text.indexOf(target) != -1) {
+	                result = true;
+	            }
+	            words.forEach(function (word) {
+	                if (word.reading.indexOf(target) != -1) {
+	                    result = true;
+	                }
+	            });
+	        });
+	        return result;
 	    },
 
 	    //テキストセット
@@ -680,10 +720,12 @@
 	var Hpepper = __webpack_require__(14);
 	var freetalk = __webpack_require__(15);
 	var plain = __webpack_require__(16);
+	var mapsearch = __webpack_require__(17);
+	var transit = __webpack_require__(18);
 	var util = __webpack_require__(9);
 	var logger = __webpack_require__(10);
 	var redis = __webpack_require__(8);
-	var alarmMessage = __webpack_require__(17);
+	var alarmMessage = __webpack_require__(19);
 
 	//メッセージ-dispatcher
 	function dispatcher(args, callback) {
@@ -742,22 +784,49 @@
 	                            Hpepper(args.option, args.to_array, callback);
 	                            return;
 	                        }
-	                        ////////////////////
-	                        else if (type.key === util.TALKTYPE.TALK.KAWAII.key) {
-	                                plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
-	                            } else if (type.key === util.TALKTYPE.TALK.ARIGATO.key) {
-	                                plain(util.message('どういたかに'), args, callback);
-	                            } else if (type.key === util.TALKTYPE.TALK.LOVE.key) {
-	                                plain(util.message('あいしてるかに〜☻'), args, callback);
-	                            } else if (type.key === util.TALKTYPE.TALK.WHATTIME.key) {
-	                                var time = util.calcTime(2);
-	                                plain(util.message('いまは' + time + 'だよ'), args, callback);
-	                            }
-	                            ////////////////////
-	                            else {
-	                                    //ERROR
-	                                    callback('unknown error');
+	                        //////////マップ////////////
+	                        else if (type.key === util.TALKTYPE.GMAP.WHERE.key) {
+	                                if (typeof args.option.maptarget !== 'undefined') {
+	                                    mapsearch({ to: args.option.maptarget }, args.to_array, callback);
+	                                } else {
+	                                    plain(util.message('行けると良いかにね'), args, callback);
 	                                }
+	                            } else if (type.key === util.TALKTYPE.GMAP.GOTO.key) {
+	                                if (typeof args.option.goto !== 'undefined') {
+	                                    args.next = util.TALKTYPE.GMAP.GOTO;
+	                                    transit({ to: args.option.goto }, args.to_array, callback);
+	                                } else {
+	                                    plain(util.message('行けると良いかにね'), args, callback);
+	                                }
+	                            }
+	                            /*
+	                            else if(type.key===util.TALKTYPE.GMAP.GOTO.FROM.key){
+	                                args.client.get('goto',(goto)=>{
+	                                    if(typeof args.option.from!=='undefined' || typeof goto !== 'undefined'){
+	                                        transit({from:args.option.from, to:goto}, args.to_array, callback);
+	                                    }
+	                                    else { 
+	                                        plain(util.message('行けると良いかにね'), args, callback);
+	                                    }
+	                                });
+	                            }
+	                            */
+	                            ///////////TALK/////////////
+	                            else if (type.key === util.TALKTYPE.TALK.KAWAII.key) {
+	                                    plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
+	                                } else if (type.key === util.TALKTYPE.TALK.ARIGATO.key) {
+	                                    plain(util.message('どういたかに'), args, callback);
+	                                } else if (type.key === util.TALKTYPE.TALK.LOVE.key) {
+	                                    plain(util.message('あいしてるかに〜☻'), args, callback);
+	                                } else if (type.key === util.TALKTYPE.TALK.WHATTIME.key) {
+	                                    var time = util.calcTime(2);
+	                                    plain(util.message('いまアメリカは' + time + 'だよ！\n日本はもう９時間遅いかな？'), args, callback);
+	                                }
+	                                ////////////////////
+	                                else {
+	                                        //ERROR
+	                                        callback('unknown error');
+	                                    }
 	    } catch (err) {
 	        //ERROR
 	        callback(err);
@@ -935,7 +1004,9 @@
 	            //TODO 語尾をかえる？
 	            var tmp = utt.substring(0, utt.length - 1);
 	            var last = utt.substring(utt.length - 1);
-	            if (last == '。' || last == '！' || last == '？') {
+	            if (last === ' ') {
+	                utt = tmp;
+	            } else if (last === '。' || last === '！' || last === '？') {
 	                utt = tmp + 'かに' + last;
 	            } else {
 	                utt = utt + 'かに';
@@ -982,21 +1053,201 @@
 
 	'use strict';
 
+	//mapsearch
+	var request = __webpack_require__(6);
+	var util = __webpack_require__(9);
+	var logger = __webpack_require__(10);
+
+	function mapsearchMessage(option, to_array, callback) {
+	    // Google MAP 検索 API
+	    var url = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
+	    //logger.log(logger.type.INFO, 'GMAPKEY: ' + process.env.GMAPKEY);
+
+	    logger.log(logger.type.INFO, 'kani::: mapsearchMessage: ' + JSON.stringify(option));
+
+	    var to = option.to;
+
+	    var slice = to.indexOf('ってどこ');
+	    to = to.substring(0, slice);
+
+	    // Google map api リクエストパラメータの設定
+	    var query = {
+	        'key': process.env.GMAPKEY,
+	        'query': to
+	    };
+
+	    var options = {
+	        url: url,
+	        //proxy: process.env.PROXY,
+	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+	        qs: query,
+	        json: true
+	    };
+
+	    // 検索結果をオブジェクト化
+	    var result = {};
+
+	    request.get(options, function (error, response) {
+	        try {
+	            //console.log(JSON.stringify(response));
+
+	            var res = response.body;
+	            var results = res.results[0];
+
+	            var message = [];
+
+	            if (results.geometry !== 'undefined') {
+	                var location = results.geometry.location;
+
+	                result = {
+	                    name: to,
+	                    latitude: location.lat,
+	                    longitude: location.lng
+	                };
+
+	                message = [
+	                // テキスト
+	                {
+	                    'contentType': 1,
+	                    'text': '見つけたよ！\n'
+	                },
+	                // 位置情報
+	                {
+	                    'contentType': 7,
+	                    'text': result.name,
+	                    'location': {
+	                        'latitude': Number(result.latitude),
+	                        'longitude': Number(result.longitude)
+	                    }
+	                }];
+	            } else {
+	                message = util.message('見つからないかに…');
+	            }
+
+	            callback(null, to_array, message);
+	        } catch (e) {
+	            callback(e);
+	        }
+	    });
+	}
+
+	module.exports = mapsearchMessage;
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	//transit
+	var requestFrom = __webpack_require__(6);
+	var requestTo = __webpack_require__(6);
+	var util = __webpack_require__(9);
+	var logger = __webpack_require__(10);
+
+	function transitMessage(option, to_array, callback) {
+
+	    // Google MAP 検索 API
+	    var url = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
+	    var responseUrl = 'https://maps.google.com/maps?ie=UTF8';
+	    //logger.log(logger.type.INFO, 'GMAPKEY: ' + process.env.GMAPKEY);
+
+	    logger.log(logger.type.INFO, 'kani::: transitMessage: ' + JSON.stringify(option));
+
+	    var goto = option.to;
+
+	    var slice = goto.indexOf('から');
+	    var from = goto.substring(0, slice);
+	    var slice2 = goto.indexOf('まで');
+	    var to = goto.substring(slice + 2, slice2);
+
+	    // Google map api リクエストパラメータの設定
+	    var queryFrom = {
+	        'key': process.env.GMAPKEY,
+	        'query': from
+	    };
+
+	    var queryTo = {
+	        'key': process.env.GMAPKEY,
+	        'query': to
+	    };
+
+	    var optionFrom = {
+	        url: url,
+	        //proxy: process.env.PROXY,
+	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+	        qs: queryFrom,
+	        json: true
+	    };
+	    var optionTo = {
+	        url: url,
+	        //proxy: process.env.PROXY,
+	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+	        qs: queryTo,
+	        json: true
+	    };
+
+	    // 検索結果をオブジェクト化
+	    var message = [];
+
+	    requestFrom.get(optionFrom, function (error, responseFrom) {
+	        try {
+	            var resFrom = responseFrom.body.results[0];
+
+	            if (resFrom.geometry !== 'undefined') {
+	                var locFrom = resFrom.geometry.location;
+	                responseUrl += '&saddr=' + locFrom.lat + ',' + locFrom.lng;
+
+	                requestTo.get(optionTo, function (error, responseTo) {
+	                    //console.log(JSON.stringify(responseTo));
+
+	                    var resTo = responseTo.body.results[0];
+
+	                    if (resTo.geometry !== 'undefined') {
+	                        var locTo = resTo.geometry.location;
+	                        responseUrl += '&daddr=' + locTo.lat + ',' + locTo.lng;
+
+	                        message = [
+	                        // テキスト
+	                        {
+	                            'contentType': 1,
+	                            'text': 'こんな感じかに〜\n' + responseUrl
+	                        }];
+	                    } else {
+	                        message = util.message('見つからないかに…');
+	                    }
+
+	                    callback(null, to_array, message);
+	                }.bind(this));
+	            } else {
+	                message = util.message('見つからないかに…');
+	            }
+	        } catch (e) {
+	            callback(e);
+	        }
+	    }.bind(this));
+	}
+
+	module.exports = transitMessage;
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
 	//alarm
-	var schedule = __webpack_require__(18);
+	var schedule = __webpack_require__(20);
 	var Linebot = __webpack_require__(12);
 	var util = __webpack_require__(9);
 
 	function alarmMessage(args) {
 	    //TODO アラーム機能
-	    var now = util.calcTime(0);
-	    var min = Number(now.min) + Number(args.option.time);
-	    var setDate = new Date(now.year, now.month, now.day, now.hour, min, now.sec);
-	    console.log(setDate);
-	    var job = schedule.scheduleJob(setDate, function (_args) {
-	        console.log('アラート実行' + _args);
-	        Linebot(args.to_array, util.message('わー！'));
-	    }.bind(null, args));
+	    var setDate = new Date();
+	    setDate.setMinutes(setDate.getMinutes() + Number(args.option.time));
+	    var job = schedule.scheduleJob(setDate, function () {
+	        Linebot(args.to_array, util.message('時間が経ったよ！'));
+	    });
 	    job.on('scheduled', function () {
 	        console.log('予定が登録されました');
 	    });
@@ -1005,7 +1256,7 @@
 	module.exports = alarmMessage;
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports) {
 
 	module.exports = require("node-schedule");

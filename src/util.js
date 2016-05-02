@@ -1,30 +1,29 @@
-
 const logger = require('./logger');
 const Util = {
     //トークタイプ
     TALKTYPE : {
         OTHER: {
             key: '0',
-            value: '*'
+            value: ['*']
         },        
         GREETING: {
             key: '1',
             OHA: {
                 key: '1-1',
-                value: 'おは'
+                value: ['おは']
             },
             KONNICHIWA: {
                 key: '1-2',
-                value: 'こんにち'
+                value: ['こんにち']
             },
             KONBANWA: {
                 key: '1-3',
-                value: 'こんばん'
+                value: ['こんばん']
             }
         },
         GROUMET: {
             key: '2',
-            value: 'ごはん',
+            value: ['ごはん','めし'],
             GROUMET_SEARCH: {
                 key: '2-1',
                 value: '*'
@@ -32,32 +31,42 @@ const Util = {
         },
         FRIEND: {
             key:'3',
-            value: 'ともだち',
+            value: ['ともだち'],
             REGISTER: {
                 key: '3-1',
-                value: '友達登録'
+                value: ['友達登録']
             },
             UNREGISTER: {
                 key: '3-2',
-                value: '友達解除'
+                value: ['友達解除']
             }
         },
         ALARM: {
             key:'4',
-            value: 'あらーむ',
-            ACCEPT:{
+            value: ['あらーむ'],
+            ACCEPT: {
                 key:'4-1',
-                value: 'りょうかい' 
+                value: ['\d'] 
+            }
+        },
+        GMAP:{
+            WHERE: {
+                key:'5-1',
+                value: ['ってどこ？']
+            },
+            GOTO: {
+                key:'5-2',
+                value: ['いきかた','行き方','\^\.\+から\.\+まで\$']
             }
         },
         TALK:{
             KAWAII: {
                 key: '9-1',
-                value: 'かわいい？'
+                value: ['かわいい？']
             },
             ARIGATO: {
                 key: '9-2',
-                value: 'ありがと'
+                value: ['ありがと']
             },
             LOVE: {
                 key: '9-3',
@@ -65,13 +74,34 @@ const Util = {
             },
             WHATTIME:{
                 key: '9-4',
-                value: ['いまなんじ？']
+                value: ['いまなんじ','今なんじ','今何時']
             }
         },
         ERROR: {
             key: '-1',
             value: '*'
         }
+    },
+
+    //テキスト判定
+    checkText: (targets, words, text)=>{
+        let result = false;
+        targets.forEach((target)=>{
+            let reg = new RegExp (target);
+            if(text.match(reg)){
+                console.log('regExp true');
+                result = true; 
+            }
+            if(text.indexOf(target)!=-1){
+                result = true;
+            }
+            words.forEach((word)=>{
+                if(word.reading.indexOf(target)!=-1){
+                    result = true;
+                }
+            });
+        });
+        return result;
     },
 
     //テキストセット
