@@ -2,6 +2,8 @@
 const Hpepper = require('./createMessage/hotpepperMessage');
 const freetalk = require('./createMessage/freetalkMessage');
 const plain = require('./createMessage/plaintextMessage');
+const mapsearch = require('./createMessage/mapsearchMessage');
+const transit = require('./createMessage/transitMessage');
 const util = require('./util');
 const logger = require('./logger');
 const redis = require('redis');
@@ -71,7 +73,36 @@ function dispatcher(args, callback){
             Hpepper(args.option, args.to_array, callback);
             return;
         }
-        ////////////////////
+        //////////マップ////////////
+        else if(type.key===util.TALKTYPE.GMAP.WHERE.key){
+            if(typeof args.option.maptarget!=='undefined'){
+                mapsearch({to:args.option.maptarget}, args.to_array, callback);
+            }
+            else {
+                plain(util.message('行けると良いかにね'), args, callback);
+            }
+        }
+        else if(type.key===util.TALKTYPE.GMAP.GOTO.key){
+            if(typeof args.option.goto!=='undefined'){
+                args.next = util.TALKTYPE.GMAP.GOTO;
+                transit({to:args.option.goto}, args.to_array, callback);
+            } else {
+                plain(util.message('行けると良いかにね'), args, callback);
+            }
+        }
+        /*
+        else if(type.key===util.TALKTYPE.GMAP.GOTO.FROM.key){
+            args.client.get('goto',(goto)=>{
+                if(typeof args.option.from!=='undefined' || typeof goto !== 'undefined'){
+                    transit({from:args.option.from, to:goto}, args.to_array, callback);
+                }
+                else { 
+                    plain(util.message('行けると良いかにね'), args, callback);
+                }
+            });
+        }
+        */
+        ///////////TALK/////////////
         else if(type.key===util.TALKTYPE.TALK.KAWAII.key){
             plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
         }
@@ -83,7 +114,7 @@ function dispatcher(args, callback){
         }
         else if(type.key===util.TALKTYPE.TALK.WHATTIME.key){
             const time = util.calcTime(2);
-            plain(util.message('いまは'+time+'だよ'), args, callback);
+            plain(util.message('いまアメリカは'+time+'だよ！\n日本はもう９時間遅いかな？'), args, callback);
         }
         ////////////////////
         else{

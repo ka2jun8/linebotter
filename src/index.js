@@ -106,6 +106,7 @@ app.post('/callback', function(req, res){
     function(err, to_array, message) {
         if(err){
             logger.log(logger.type.ERROR, err);
+            client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
             const errm = util.message('なんかエラーがおきたみたい');
             message = errm;
         }
