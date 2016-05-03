@@ -896,7 +896,6 @@
 	    var message = [];
 
 	    var setShop = function setShop(shop) {
-	        console.log('shop?' + JSON.stringify(shop));
 	        return {
 	            name: shop.name,
 	            shop_image1: shop.photo.mobile.l,
@@ -904,12 +903,12 @@
 	            latitude: shop.lat,
 	            longitude: shop.lng,
 	            opentime: shop.open,
-	            url: shop.urls.mobile
+	            url: shop.urls.pc
 	        };
 	    };
 	    var setMessage = function setMessage(result) {
 	        return {
-	            text: 'こちらはいかがですかに？\n【お店】' + result.name + '\n【営業時間】' + result.opentime + '\n URL:' + result.url,
+	            text: 'こちらはいかがですかに？\n【お店】' + result.name + '\n【営業時間】' + result.opentime + '\n【URL】 ' + result.url,
 	            imageArray: [result.shop_image1],
 	            location: {
 	                name: result.name,
