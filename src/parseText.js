@@ -47,7 +47,8 @@ function parseText(previous, args) {
         let option = {
             gkey: '', //グルメ検索キーワード
             time: '', //アラーム分後
-            goto: [] //行きたいところ
+            goto: [], //行きたいところ,
+            wpoint: '' //天気を知りたい場所
         };
 
         //トークタイプの判定
@@ -87,6 +88,11 @@ function parseText(previous, args) {
                 ////////アラーム////////////
                 else if(util.checkText(util.TALKTYPE.ALARM.value, words, text)){
                     type = util.TALKTYPE.ALARM;
+                }
+                ////////天気////////////
+                else if(util.checkText(util.TALKTYPE.WEATHER.value, words, text)){
+                    type = util.TALKTYPE.WEATHER;
+                    option.wpoint = text;
                 }
                 /////////友達登録///////////
                 else if(util.checkText(util.TALKTYPE.FRIEND.value, words, text)){

@@ -4,6 +4,7 @@ const freetalk = require('./createMessage/freetalkMessage');
 const plain = require('./createMessage/plaintextMessage');
 const mapsearch = require('./createMessage/mapsearchMessage');
 const transit = require('./createMessage/transitMessage');
+const weather = require('./createMessage/weatherMessage');
 const util = require('./util');
 const logger = require('./logger');
 const redis = require('redis');
@@ -91,6 +92,11 @@ function dispatcher(args, callback){
             } else {
                 plain(util.message('行けると良いかにね'), args, callback);
             }
+        }
+        //////////天気////////////
+        else if(type.key===util.TALKTYPE.WEATHER.key){
+            args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+            weather(args.option.wpoint, args.to_array, callback);
         }
         ///////////TALK/////////////
         else if(type.key===util.TALKTYPE.TALK.KAWAII.key){

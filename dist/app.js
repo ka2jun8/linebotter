@@ -77,14 +77,13 @@
 	//エスケープシーケンス
 	//署名検証
 	//画像認識 「これ何？」
-	//「〜〜まで行きたい」
-	//ここから〜〜までの行き方 //位置情報
 	//スタンプ対応
 	//傘必要な日は毎朝教えて欲しい
 	//健康
 	//みんな（友達）に発言する
-	//redis search & register
 	//アラーム時間差で
+	//〜って何？ で辞書検索
+	//〜の英語 で英辞書検索
 
 	//test
 	app.get('/', function (req, res) {
@@ -311,7 +310,8 @@
 	        var option = {
 	            gkey: '', //グルメ検索キーワード
 	            time: '', //アラーム分後
-	            goto: [] //行きたいところ
+	            goto: [], //行きたいところ,
+	            wpoint: '' //天気を知りたい場所
 	        };
 
 	        //トークタイプの判定
@@ -348,26 +348,31 @@
 	                        else if (util.checkText(util.TALKTYPE.ALARM.value, words, text)) {
 	                                type = util.TALKTYPE.ALARM;
 	                            }
-	                            /////////友達登録///////////
-	                            else if (util.checkText(util.TALKTYPE.FRIEND.value, words, text)) {
-	                                    type = util.TALKTYPE.FRIEND;
-	                                } else if (util.checkText(util.TALKTYPE.FRIEND.REGISTER.value, words, text)) {
-	                                    type = util.TALKTYPE.FRIEND.REGISTER;
-	                                } else if (util.checkText(util.TALKTYPE.FRIEND.UNREGISTER.value, words, text)) {
-	                                    type = util.TALKTYPE.FRIEND.UNREGISTER;
+	                            ////////天気////////////
+	                            else if (util.checkText(util.TALKTYPE.WEATHER.value, words, text)) {
+	                                    type = util.TALKTYPE.WEATHER;
+	                                    option.wpoint = text;
 	                                }
-	                                ////////マップ////////////
-	                                else if (util.checkText(util.TALKTYPE.GMAP.WHERE.value, words, text)) {
-	                                        type = util.TALKTYPE.GMAP.WHERE;
-	                                        option.maptarget = text;
-	                                    } else if (util.checkText(util.TALKTYPE.GMAP.GOTO.value, words, text)) {
-	                                        type = util.TALKTYPE.GMAP.GOTO;
-	                                        option.goto = text;
+	                                /////////友達登録///////////
+	                                else if (util.checkText(util.TALKTYPE.FRIEND.value, words, text)) {
+	                                        type = util.TALKTYPE.FRIEND;
+	                                    } else if (util.checkText(util.TALKTYPE.FRIEND.REGISTER.value, words, text)) {
+	                                        type = util.TALKTYPE.FRIEND.REGISTER;
+	                                    } else if (util.checkText(util.TALKTYPE.FRIEND.UNREGISTER.value, words, text)) {
+	                                        type = util.TALKTYPE.FRIEND.UNREGISTER;
 	                                    }
-	                                    ///////////////////////////
-	                                    else {
-	                                            type = util.TALKTYPE.OTHER;
+	                                    ////////マップ////////////
+	                                    else if (util.checkText(util.TALKTYPE.GMAP.WHERE.value, words, text)) {
+	                                            type = util.TALKTYPE.GMAP.WHERE;
+	                                            option.maptarget = text;
+	                                        } else if (util.checkText(util.TALKTYPE.GMAP.GOTO.value, words, text)) {
+	                                            type = util.TALKTYPE.GMAP.GOTO;
+	                                            option.goto = text;
 	                                        }
+	                                        ///////////////////////////
+	                                        else {
+	                                                type = util.TALKTYPE.OTHER;
+	                                            }
 	                ///////////////////
 	            }
 
@@ -527,6 +532,10 @@
 	                key: '5-2',
 	                value: ['いきかた', '行き方', '\^\.\+から\.\+まで\$']
 	            }
+	        },
+	        WEATHER: {
+	            key: '6',
+	            value: ['雨', 'あめ', '天気', '降水確率']
 	        },
 	        TALK: {
 	            KAWAII: {
@@ -758,7 +767,7 @@
 
 	    request.post(options, function (error, response, body) {
 	        if (!error && response.statusCode == 200) {
-	            logger.log(logger.type.INFO, 'Linebotter: ' + body);
+	            logger.log(logger.type.INFO, 'Linebotter: ' + JSON.stringify(body));
 	        } else {
 	            logger.log(logger.type.INFO, 'error: ' + JSON.stringify(response));
 	        }
@@ -777,11 +786,12 @@
 	var freetalk = __webpack_require__(15);
 	var plain = __webpack_require__(16);
 	var mapsearch = __webpack_require__(17);
-	var transit = __webpack_require__(18);
+	var transit = __webpack_require__(19);
+	var weather = __webpack_require__(20);
 	var util = __webpack_require__(9);
 	var logger = __webpack_require__(10);
 	var redis = __webpack_require__(8);
-	var alarmMessage = __webpack_require__(19);
+	var alarmMessage = __webpack_require__(21);
 
 	//メッセージ-dispatcher
 	function dispatcher(args, callback) {
@@ -856,22 +866,27 @@
 	                                    plain(util.message('行けると良いかにね'), args, callback);
 	                                }
 	                            }
-	                            ///////////TALK/////////////
-	                            else if (type.key === util.TALKTYPE.TALK.KAWAII.key) {
-	                                    plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
-	                                } else if (type.key === util.TALKTYPE.TALK.ARIGATO.key) {
-	                                    plain(util.message('どういたかに'), args, callback);
-	                                } else if (type.key === util.TALKTYPE.TALK.LOVE.key) {
-	                                    plain(util.message('あいしてるかに〜☻'), args, callback);
-	                                } else if (type.key === util.TALKTYPE.TALK.WHATTIME.key) {
-	                                    var time = util.calcTime(2);
-	                                    plain(util.message('いまアメリカは' + time + 'だよ！\n日本はもう９時間遅いかな？'), args, callback);
+	                            //////////天気////////////
+	                            else if (type.key === util.TALKTYPE.WEATHER.key) {
+	                                    args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+	                                    weather(args.option.wpoint, args.to_array, callback);
 	                                }
-	                                ////////////////////
-	                                else {
-	                                        //ERROR
-	                                        callback('unknown error');
+	                                ///////////TALK/////////////
+	                                else if (type.key === util.TALKTYPE.TALK.KAWAII.key) {
+	                                        plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
+	                                    } else if (type.key === util.TALKTYPE.TALK.ARIGATO.key) {
+	                                        plain(util.message('どういたかに'), args, callback);
+	                                    } else if (type.key === util.TALKTYPE.TALK.LOVE.key) {
+	                                        plain(util.message('あいしてるかに〜☻'), args, callback);
+	                                    } else if (type.key === util.TALKTYPE.TALK.WHATTIME.key) {
+	                                        var time = util.calcTime(2);
+	                                        plain(util.message('いまアメリカは' + time + 'だよ！\n日本はもう９時間遅いかな？'), args, callback);
 	                                    }
+	                                    ////////////////////
+	                                    else {
+	                                            //ERROR
+	                                            callback('unknown error');
+	                                        }
 	    } catch (err) {
 	        //ERROR
 	        callback(err);
@@ -1119,15 +1134,15 @@
 	'use strict';
 
 	//mapsearch
-	var request = __webpack_require__(6);
+	//const request = require('request');
 	var util = __webpack_require__(9);
 	var logger = __webpack_require__(10);
+	var mapSearch = __webpack_require__(18);
 
 	function mapsearchMessage(option, to_array, callback) {
 	    // Google MAP 検索 API
-	    var url = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
+	    //let url = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
 	    //logger.log(logger.type.INFO, 'GMAPKEY: ' + process.env.GMAPKEY);
-
 	    logger.log(logger.type.INFO, 'kani::: mapsearchMessage: ' + JSON.stringify(option));
 
 	    var to = option.to;
@@ -1135,10 +1150,63 @@
 	    var slice = to.indexOf('ってどこ');
 	    to = to.substring(0, slice);
 
+	    var message = [];
+
+	    var mapMessage = function mapMessage(err, result) {
+	        if (err || !result) {
+	            callback('エラーかに...');
+	        }
+
+	        if (result) {
+	            message = [
+	            // テキスト
+	            {
+	                'contentType': 1,
+	                'text': '見つけたよ！\n'
+	            },
+	            // 位置情報
+	            {
+	                'contentType': 7,
+	                'text': result.name,
+	                'location': {
+	                    'title': result.title,
+	                    'latitude': Number(result.lat),
+	                    'longitude': Number(result.lng)
+	                }
+	            }];
+	            console.log('kani:::' + JSON.stringify(message) + '/' + to_array[0]);
+	        } else {
+	            message = util.message('見つからないかに…');
+	        }
+
+	        callback(null, to_array, message);
+	    };
+
+	    mapSearch(to, mapMessage);
+	}
+
+	module.exports = mapsearchMessage;
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	//mapsearch
+	var request = __webpack_require__(6);
+	var logger = __webpack_require__(10);
+
+	function mapSearch(place, _callback) {
+	    // Google MAP 検索 API
+	    var url = 'https://maps.googleapis.com/maps/api/place/textsearch/json';
+	    //logger.log(logger.type.INFO, 'GMAPKEY: ' + process.env.GMAPKEY);
+	    logger.log(logger.type.INFO, 'kani::: mapSearch: ' + place);
+
 	    // Google map api リクエストパラメータの設定
 	    var query = {
 	        'key': process.env.GMAPKEY,
-	        'query': to
+	        'query': place
 	    };
 
 	    var options = {
@@ -1154,54 +1222,34 @@
 
 	    request.get(options, function (error, response) {
 	        try {
-	            //console.log(JSON.stringify(response));
-
 	            var res = response.body;
 	            var results = res.results[0];
-
-	            var message = [];
 
 	            if (results.geometry !== 'undefined') {
 	                var location = results.geometry.location;
 
 	                result = {
-	                    name: to,
-	                    latitude: location.lat,
-	                    longitude: location.lng
+	                    name: place,
+	                    lat: location.lat,
+	                    lng: location.lng
 	                };
-
-	                message = [
-	                // テキスト
-	                {
-	                    'contentType': 1,
-	                    'text': '見つけたよ！\n'
-	                },
-	                // 位置情報
-	                {
-	                    'contentType': 7,
-	                    'text': result.name,
-	                    'location': {
-	                        'title': result.name,
-	                        'latitude': Number(result.latitude),
-	                        'longitude': Number(result.longitude)
-	                    }
-	                }];
-	                console.log('kani:::' + JSON.stringify(message) + '/' + to_array[0]);
 	            } else {
-	                message = util.message('見つからないかに…');
+	                result = null;
 	            }
 
-	            callback(null, to_array, message);
+	            logger.log(logger.type.INFO, 'mapSearch result: ' + JSON.stringify(result));
+	            _callback(null, result);
 	        } catch (e) {
-	            callback(e);
+
+	            _callback(e);
 	        }
 	    });
 	}
 
-	module.exports = mapsearchMessage;
+	module.exports = mapSearch;
 
 /***/ },
-/* 18 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1298,13 +1346,106 @@
 	module.exports = transitMessage;
 
 /***/ },
-/* 19 */
+/* 20 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var request = __webpack_require__(6);
+	var xml2json = __webpack_require__(7);
+	var logger = __webpack_require__(10);
+	var util = __webpack_require__(9);
+	var mapSearch = __webpack_require__(18);
+
+	//天気api
+	function weatherMessage(wpoint, to_array, callback) {
+	    // Yahoo天気api
+	    var url = 'http://weather.olp.yahooapis.jp/v1/place';
+	    //logger.log(logger.type.INFO, 'yahoo weather: ' + process.env.YAPPID);
+
+	    logger.log(logger.type.INFO, 'weatherMessage: ');
+
+	    var place = null;
+	    if (wpoint.indexOf('の') != -1) {
+	        place = wpoint.substring(0, wpoint.indexOf('の'));
+	    } else if (wpoint.indexOf('は') != -1) {
+	        place = wpoint.substring(0, wpoint.indexOf('は'));
+	    } else if (wpoint.indexOf(' ') != -1) {
+	        place = wpoint.substring(0, wpoint.indexOf(' '));
+	    } else if (wpoint.indexOf('、') != -1) {
+	        place = wpoint.substring(0, wpoint.indexOf('、'));
+	    }
+
+	    var location = {};
+
+	    var locationMessage = function locationMessage(err, location) {
+
+	        if (err || !location) {
+	            console.log(err);
+	            callback(err);
+	        }
+
+	        // yahoo天気 リクエストパラメータの設定
+	        var query = {
+	            appid: process.env.YAPPID,
+	            coordinates: location.lng + ',' + location.lat
+	        };
+
+	        var options = {
+	            url: url,
+	            //proxy: process.env.PROXY,
+	            headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+	            qs: query,
+	            json: true
+	        };
+
+	        logger.log(logger.type.INFO, 'weatherMessage: query:' + JSON.stringify(query));
+	        request.get(options, function (error, response /*, body*/) {
+	            try {
+	                var xml = response.body;
+	                var _json = xml2json.toJson(xml);
+	                var obj = JSON.parse(_json);
+	                var weathers = obj.YDF.Feature.Property.WeatherList.Weather;
+	                console.log(JSON.stringify(weathers));
+	                var rainfall = Number(weathers[0].Rainfall) * 100;
+
+	                var message = [];
+	                var text = location.name + '近辺の現在の降水強度は、' + rainfall + '%かに\n ※降水強度（単位：mm/h）';
+
+	                message = util.message(text);
+
+	                callback(null, to_array, message);
+	            } catch (e) {
+	                console.log(e);
+	                callback(e);
+	            }
+	        });
+	    };
+
+	    if (place) {
+	        mapSearch(place, locationMessage);
+	    } else {
+	        //デフォルト武蔵中原
+	        location = {
+	            name: '武蔵中原駅',
+	            lat: '35.581154',
+	            lng: '139.641474'
+	        };
+
+	        locationMessage(null, location);
+	    }
+	}
+
+	module.exports = weatherMessage;
+
+/***/ },
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	//alarm
-	var schedule = __webpack_require__(20);
+	var schedule = __webpack_require__(22);
 	var Linebot = __webpack_require__(12);
 	var util = __webpack_require__(9);
 
@@ -1323,7 +1464,7 @@
 	module.exports = alarmMessage;
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports) {
 
 	module.exports = require("node-schedule");
