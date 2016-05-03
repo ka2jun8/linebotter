@@ -37,7 +37,7 @@ function linebot(to_array, message) {
 
     request.post(options, function (error, response, body) {
         if (!error && response.statusCode == 200) {
-            logger.log(logger.type.INFO, body);
+            logger.log(logger.type.INFO, 'Linebotter: '+body);
         } else {
             logger.log(logger.type.INFO, 'error: '+ JSON.stringify(response));
         }

@@ -55,7 +55,8 @@ function mapsearchMessage(option, to_array, callback){
                     {
                         'contentType': 1,
                         'text': '見つけたよ！\n'
-                    },
+                    }
+                    /*,
                     // 位置情報
                     {
                         'contentType':7,
@@ -65,7 +66,7 @@ function mapsearchMessage(option, to_array, callback){
                             'latitude': Number(result.latitude),
                             'longitude': Number(result.longitude)
                         }
-                    }
+                    }*/
                 ];
                 
             }else {
