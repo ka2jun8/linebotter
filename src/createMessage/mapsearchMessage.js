@@ -61,6 +61,7 @@ function mapsearchMessage(option, to_array, callback){
                         'contentType':7,
                         'text': result.name,
                         'location':{
+                            'title': result.name,
                             'latitude': Number(result.latitude),
                             'longitude': Number(result.longitude)
                         }
