@@ -50,7 +50,6 @@ function mapsearchMessage(option, to_array, callback){
                     longitude: location.lng
                 } ;       
                 
-                /*
                 message = [
                     // テキスト
                     {
@@ -68,8 +67,6 @@ function mapsearchMessage(option, to_array, callback){
                         }
                     }
                 ];
-                */
-                message = util.message('ふぁー');    
                 console.log('kani:::'+JSON.stringify(message)+'/'+to_array[0]);            
             }else {
                 message = util.message('見つからないかに…');
