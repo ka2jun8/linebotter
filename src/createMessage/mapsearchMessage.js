@@ -50,14 +50,13 @@ function mapsearchMessage(option, to_array, callback){
                     longitude: location.lng
                 } ;       
                 
+                /*
                 message = [
                     // テキスト
                     {
                         'contentType': 1,
                         'text': '見つけたよ！\n'
-                    }
-                    /*
-                    ,
+                    },
                     // 位置情報
                     {
                         'contentType':7,
@@ -67,9 +66,11 @@ function mapsearchMessage(option, to_array, callback){
                             'latitude': Number(result.latitude),
                             'longitude': Number(result.longitude)
                         }
-                    }*/
+                    }
                 ];
-                
+                */
+                message = util.message('ふぁー');    
+                console.log('kani:::'+JSON.stringify(message)+'/'+to_array[0]);            
             }else {
                 message = util.message('見つからないかに…');
             }
