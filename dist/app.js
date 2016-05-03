@@ -702,7 +702,7 @@
 
 	    request.post(options, function (error, response, body) {
 	        if (!error && response.statusCode == 200) {
-	            logger.log(logger.type.INFO, body);
+	            logger.log(logger.type.INFO, 'Linebotter: ' + body);
 	        } else {
 	            logger.log(logger.type.INFO, 'error: ' + JSON.stringify(response));
 	        }
@@ -1105,21 +1105,27 @@
 	                    longitude: location.lng
 	                };
 
+	                /*
 	                message = [
-	                // テキスト
-	                {
-	                    'contentType': 1,
-	                    'text': '見つけたよ！\n'
-	                },
-	                // 位置情報
-	                {
-	                    'contentType': 7,
-	                    'text': result.name,
-	                    'location': {
-	                        'latitude': Number(result.latitude),
-	                        'longitude': Number(result.longitude)
+	                    // テキスト
+	                    {
+	                        'contentType': 1,
+	                        'text': '見つけたよ！\n'
+	                    },
+	                    // 位置情報
+	                    {
+	                        'contentType':7,
+	                        'text': result.name,
+	                        'location':{
+	                            'title': result.name,
+	                            'latitude': Number(result.latitude),
+	                            'longitude': Number(result.longitude)
+	                        }
 	                    }
-	                }];
+	                ];
+	                */
+	                message = util.message('ふぁー');
+	                console.log('kani:::' + JSON.stringify(message) + '/' + to_array[0]);
 	            } else {
 	                message = util.message('見つからないかに…');
 	            }
