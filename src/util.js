@@ -26,8 +26,12 @@ const Util = {
             value: ['ごはん','めし'],
             GROUMET_SEARCH: {
                 key: '2-1',
-                value: '*'
-            }
+                value: ['.+']
+            },
+            RESULTS: {
+                key: '2-2',
+                value: ['他','ほか']
+            }            
         },
         FRIEND: {
             key:'3',
@@ -106,11 +110,56 @@ const Util = {
 
     //テキストセット
     message: (text)=>{
-        logger.log(logger.type.INFO, 'create message *<- '+text);
+        //logger.log(logger.type.INFO, 'create message *<- '+text);
         let obj = [{
             'contentType': 1,
             'text': text
         }];
+        return obj;
+    },
+    //テキスト+画像セット
+    textImage: (text,imageArray)=>{
+        //logger.log(logger.type.INFO, 'create message *<- '+text);
+        let obj = [
+            {
+                'contentType': 1,
+                'text': text
+            },
+             // 画像
+            {
+                'contentType': 2,
+                'originalContentUrl': imageArray[0],
+                'previewImageUrl': imageArray[0]
+            }
+        ];
+        return obj;
+    },
+    //テキストセット
+    textImageLocation: (text,imageArray,location)=>{
+        //logger.log(logger.type.INFO, 'create message *<- '+text);
+        let obj = [
+            // テキスト
+            {
+                'contentType': 1,
+                'text': text
+            },
+            // 画像
+            {
+                'contentType': 2,
+                'originalContentUrl': imageArray[0],
+                'previewImageUrl': imageArray[0]
+            },
+            // 位置情報
+            {
+                'contentType':7,
+                'text': location.name,
+                'location':{
+                    'title': location.title,
+                    'latitude': location.lat,
+                    'longitude': location.lng
+                }
+            }];
+        logger.log(logger.type.INFO, 'create message *<- '+JSON.stringify(obj));
         return obj;
     },
     

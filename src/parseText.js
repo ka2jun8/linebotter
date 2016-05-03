@@ -45,7 +45,7 @@ function parseText(previous, args) {
 
         //引数オプション        
         let option = {
-            gkey: [], //グルメ検索キーワード
+            gkey: '', //グルメ検索キーワード
             time: '', //アラーム分後
             goto: [] //行きたいところ
         };
@@ -57,6 +57,7 @@ function parseText(previous, args) {
             //set talktype
             if(previous.key==util.TALKTYPE.OTHER.key){ //0
                 //logger.log(logger.type.INFO, type+':'+word);
+                /////GROUMET//////
                 if(util.checkText(util.TALKTYPE.GROUMET.value, words, text)){
                     type = util.TALKTYPE.GROUMET;
                 }
@@ -112,14 +113,24 @@ function parseText(previous, args) {
                 }
                 ///////////////////
             }
+
+            //////////////////////////////
+            ////////~ NEXT TERM ~/////////
+            //////////////////////////////
+
             ////////GROUMET////////
             else if(previous.key==util.TALKTYPE.GROUMET.key){ //2
                 type=util.TALKTYPE.GROUMET.GROUMET_SEARCH; //2-1
-                words.forEach((word)=>{
-                    if(word.pos === '名詞'){
-                        option.gkey.push(word.surface);
-                    }
-                });
+                option.gkey=text;
+            }
+            else if(previous.key==util.TALKTYPE.GROUMET.GROUMET_SEARCH.key
+                || previous.key==util.TALKTYPE.GROUMET.RESULTS.key){ //2-1
+                if(util.checkText(util.TALKTYPE.GROUMET.RESULTS.value, words, text)){
+                    type=util.TALKTYPE.GROUMET.RESULTS; //2-2
+                }
+                else {
+                    type = util.TALKTYPE.OTHER;
+                }
             }
             ////////ALARM////////
             else if(previous.key==util.TALKTYPE.ALARM.key){ //

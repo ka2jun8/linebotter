@@ -59,19 +59,19 @@ function dispatcher(args, callback){
         //////GROUMET///////
         else if(type.key===util.TALKTYPE.GROUMET.key){
             args.next = util.TALKTYPE.GROUMET;
-            plain(util.message('どんなところがいいかに？'), args, callback);
+            plain(util.message('どんなところがいいかに？\n※スペースごとキーワードかに！'), args, callback);
         }
         else if(type.key===util.TALKTYPE.GROUMET.GROUMET_SEARCH.key){
-            args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
-
-            logger.log(logger.type.INFO, JSON.stringify(args.option));
-
+            //args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+            //logger.log(logger.type.INFO, JSON.stringify(args.option));
             //ぐるなび検索
             //Grnavi(place, keyword, json, to_array, callback);
-
             //ホットペッパー検索
-            Hpepper(args.option, args.to_array, callback);
-            return;
+            Hpepper(args.option, args.client, args.to_array, callback);
+        }
+        else if(type.key===util.TALKTYPE.GROUMET.RESULTS.key){
+            args.option.other = 'true';
+            Hpepper(args.option, args.client, args.to_array, callback);
         }
         //////////マップ////////////
         else if(type.key===util.TALKTYPE.GMAP.WHERE.key){
@@ -90,18 +90,6 @@ function dispatcher(args, callback){
                 plain(util.message('行けると良いかにね'), args, callback);
             }
         }
-        /*
-        else if(type.key===util.TALKTYPE.GMAP.GOTO.FROM.key){
-            args.client.get('goto',(goto)=>{
-                if(typeof args.option.from!=='undefined' || typeof goto !== 'undefined'){
-                    transit({from:args.option.from, to:goto}, args.to_array, callback);
-                }
-                else { 
-                    plain(util.message('行けると良いかにね'), args, callback);
-                }
-            });
-        }
-        */
         ///////////TALK/////////////
         else if(type.key===util.TALKTYPE.TALK.KAWAII.key){
             plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);

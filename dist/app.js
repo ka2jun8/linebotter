@@ -309,7 +309,7 @@
 
 	        //引数オプション       
 	        var option = {
-	            gkey: [], //グルメ検索キーワード
+	            gkey: '', //グルメ検索キーワード
 	            time: '', //アラーム分後
 	            goto: [] //行きたいところ
 	        };
@@ -322,6 +322,7 @@
 	            if (previous.key == util.TALKTYPE.OTHER.key) {
 	                //0
 	                //logger.log(logger.type.INFO, type+':'+word);
+	                /////GROUMET//////
 	                if (util.checkText(util.TALKTYPE.GROUMET.value, words, text)) {
 	                    type = util.TALKTYPE.GROUMET;
 	                }
@@ -369,15 +370,23 @@
 	                                        }
 	                ///////////////////
 	            }
+
+	            //////////////////////////////
+	            ////////~ NEXT TERM ~/////////
+	            //////////////////////////////
+
 	            ////////GROUMET////////
 	            else if (previous.key == util.TALKTYPE.GROUMET.key) {
 	                    //2
 	                    type = util.TALKTYPE.GROUMET.GROUMET_SEARCH; //2-1
-	                    words.forEach(function (word) {
-	                        if (word.pos === '名詞') {
-	                            option.gkey.push(word.surface);
+	                    option.gkey = text;
+	                } else if (previous.key == util.TALKTYPE.GROUMET.GROUMET_SEARCH.key || previous.key == util.TALKTYPE.GROUMET.RESULTS.key) {
+	                    //2-1
+	                    if (util.checkText(util.TALKTYPE.GROUMET.RESULTS.value, words, text)) {
+	                        type = util.TALKTYPE.GROUMET.RESULTS; //2-2
+	                    } else {
+	                            type = util.TALKTYPE.OTHER;
 	                        }
-	                    });
 	                }
 	                ////////ALARM////////
 	                else if (previous.key == util.TALKTYPE.ALARM.key) {
@@ -482,7 +491,11 @@
 	            value: ['ごはん', 'めし'],
 	            GROUMET_SEARCH: {
 	                key: '2-1',
-	                value: '*'
+	                value: ['.+']
+	            },
+	            RESULTS: {
+	                key: '2-2',
+	                value: ['他', 'ほか']
 	            }
 	        },
 	        FRIEND: {
@@ -562,11 +575,54 @@
 
 	    //テキストセット
 	    message: function message(text) {
-	        logger.log(logger.type.INFO, 'create message *<- ' + text);
+	        //logger.log(logger.type.INFO, 'create message *<- '+text);
 	        var obj = [{
 	            'contentType': 1,
 	            'text': text
 	        }];
+	        return obj;
+	    },
+	    //テキスト+画像セット
+	    textImage: function textImage(text, imageArray) {
+	        //logger.log(logger.type.INFO, 'create message *<- '+text);
+	        var obj = [{
+	            'contentType': 1,
+	            'text': text
+	        },
+	        // 画像
+	        {
+	            'contentType': 2,
+	            'originalContentUrl': imageArray[0],
+	            'previewImageUrl': imageArray[0]
+	        }];
+	        return obj;
+	    },
+	    //テキストセット
+	    textImageLocation: function textImageLocation(text, imageArray, location) {
+	        //logger.log(logger.type.INFO, 'create message *<- '+text);
+	        var obj = [
+	        // テキスト
+	        {
+	            'contentType': 1,
+	            'text': text
+	        },
+	        // 画像
+	        {
+	            'contentType': 2,
+	            'originalContentUrl': imageArray[0],
+	            'previewImageUrl': imageArray[0]
+	        },
+	        // 位置情報
+	        {
+	            'contentType': 7,
+	            'text': location.name,
+	            'location': {
+	                'title': location.title,
+	                'latitude': location.lat,
+	                'longitude': location.lng
+	            }
+	        }];
+	        logger.log(logger.type.INFO, 'create message *<- ' + JSON.stringify(obj));
 	        return obj;
 	    },
 
@@ -771,18 +827,17 @@
 	                    //////GROUMET///////
 	                    else if (type.key === util.TALKTYPE.GROUMET.key) {
 	                            args.next = util.TALKTYPE.GROUMET;
-	                            plain(util.message('どんなところがいいかに？'), args, callback);
+	                            plain(util.message('どんなところがいいかに？\n※スペースごとキーワードかに！'), args, callback);
 	                        } else if (type.key === util.TALKTYPE.GROUMET.GROUMET_SEARCH.key) {
-	                            args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
-
-	                            logger.log(logger.type.INFO, JSON.stringify(args.option));
-
+	                            //args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
+	                            //logger.log(logger.type.INFO, JSON.stringify(args.option));
 	                            //ぐるなび検索
 	                            //Grnavi(place, keyword, json, to_array, callback);
-
 	                            //ホットペッパー検索
-	                            Hpepper(args.option, args.to_array, callback);
-	                            return;
+	                            Hpepper(args.option, args.client, args.to_array, callback);
+	                        } else if (type.key === util.TALKTYPE.GROUMET.RESULTS.key) {
+	                            args.option.other = 'true';
+	                            Hpepper(args.option, args.client, args.to_array, callback);
 	                        }
 	                        //////////マップ////////////
 	                        else if (type.key === util.TALKTYPE.GMAP.WHERE.key) {
@@ -799,18 +854,6 @@
 	                                    plain(util.message('行けると良いかにね'), args, callback);
 	                                }
 	                            }
-	                            /*
-	                            else if(type.key===util.TALKTYPE.GMAP.GOTO.FROM.key){
-	                                args.client.get('goto',(goto)=>{
-	                                    if(typeof args.option.from!=='undefined' || typeof goto !== 'undefined'){
-	                                        transit({from:args.option.from, to:goto}, args.to_array, callback);
-	                                    }
-	                                    else { 
-	                                        plain(util.message('行けると良いかにね'), args, callback);
-	                                    }
-	                                });
-	                            }
-	                            */
 	                            ///////////TALK/////////////
 	                            else if (type.key === util.TALKTYPE.TALK.KAWAII.key) {
 	                                    plain(util.message('世界でいちばんかわいいよ、食べちゃいたいくらい。ぱくっ'), args, callback);
@@ -841,19 +884,67 @@
 
 	'use strict';
 
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
 	var request = __webpack_require__(6);
 	var logger = __webpack_require__(10);
 	var util = __webpack_require__(9);
+	var redis = __webpack_require__(8);
 
 	//hotpepper apiつーかう
-	function hotpepperMessage(option, to_array, callback) {
+	function hotpepperMessage(option, client, to_array, callback) {
+	    var message = [];
+
+	    console.log('kanikani:::option?:' + JSON.stringify(option));
+
+	    //"他には？" なのでshopsから返す
+	    if (option.other) {
+	        try {
+	            client.get('shopIndex', function (err, index) {
+	                index++;
+	                client.get('shop' + index, function (err, shopJ) {
+	                    var shop = JSON.parse(shopJ);
+
+	                    if (shop) {
+	                        client.set('shopIndex', index, redis.print);
+	                        result = {
+	                            name: shop.name,
+	                            shop_image1: shop.photo.mobile.l,
+	                            address: shop.address,
+	                            latitude: shop.lat,
+	                            longitude: shop.lng,
+	                            opentime: shop.open
+	                        };
+
+	                        var text = 'こちらはいかがですかに？\n【お店】' + result.name + '\n【営業時間】' + result.opentime;
+	                        var imageArray = [];
+	                        imageArray.push(result.shop_image1);
+	                        var _location = {
+	                            name: result.name,
+	                            title: result.address,
+	                            lat: Number(result.latitude),
+	                            lng: Number(result.longitude)
+	                        };
+	                        message = util.textImageLocation(text, imageArray, _location);
+	                    } else {
+	                        message = util.message('見つからないかに…');
+	                    }
+
+	                    callback(null, to_array, message);
+	                });
+	            });
+	        } catch (e) {
+	            message = util.message('見つからないかに…');
+	            callback(null, to_array, message);
+	        }
+	        return;
+	    }
 
 	    // Hotpepper レストラン検索API
 	    var url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
 	    //logger.log(logger.type.INFO, 'hpepper: ' + process.env.HP_KEY);
 
 	    var keys = option.gkey;
-	    var keyword = '';
 	    var location = option.location;
 
 	    // HotPepper リクエストパラメータの設定
@@ -864,12 +955,7 @@
 
 	    if (typeof keys !== 'undefined') {
 	        logger.log(logger.type.INFO, 'hMessage: keywords ' + keys);
-
-	        keys.map(function (key) {
-	            keyword += key + ' ';
-	        });
-
-	        query.keyword = keyword;
+	        query.keyword = keys;
 	    } else if (typeof location !== 'undefined') {
 	        query.lat = location.latitude;
 	        query.lng = location.longitude;
@@ -888,59 +974,63 @@
 
 	    request.get(options, function (error, response, body) {
 	        try {
-
-	            if (!error && response.statusCode == 200) {
-	                if ('error' in body) {
-	                    logger.log(logger.type.ERROR, 'hMessage: 検索エラー' + JSON.stringify(body));
-	                    var errms = util.message('見つからないかに…');
-	                    callback(null, to_array, errms);
-	                    return;
-	                }
-	            }
-
-	            var res = response.body;
-	            var shops = res.results.shop;
-
-	            var message = [];
-
-	            if (shops) {
-
-	                result = {
-	                    name: shops[0].name,
-	                    shop_image1: shops[0].photo.mobile.l,
-	                    address: shops[0].address,
-	                    latitude: shops[0].lat,
-	                    longitude: shops[0].lng,
-	                    opentime: shops[0].open
-	                };
-
-	                message = [
-	                // テキスト
-	                {
-	                    'contentType': 1,
-	                    'text': 'こちらはいかがですか？\n【お店】' + result['name'] + '\n【営業時間】' + result['opentime']
-	                },
-	                // 画像
-	                {
-	                    'contentType': 2,
-	                    'originalContentUrl': result['shop_image1'],
-	                    'previewImageUrl': result['shop_image1']
-	                },
-	                // 位置情報
-	                {
-	                    'contentType': 7,
-	                    'text': result['name'],
-	                    'location': {
-	                        'title': result['address'],
-	                        'latitude': Number(result['latitude']),
-	                        'longitude': Number(result['longitude'])
+	            var _ret = function () {
+	                //console.log(JSON.stringify(body));
+	                if (!error && response.statusCode == 200) {
+	                    if ('error' in body) {
+	                        logger.log(logger.type.ERROR, 'hMessage: 検索エラー' + JSON.stringify(body));
+	                        var errms = util.message('見つからないかに…');
+	                        callback(null, to_array, errms);
+	                        return {
+	                            v: void 0
+	                        };
 	                    }
-	                }];
-	            } else {
-	                message = util.message('見つからないかに…');
-	            }
+	                }
 
-	            callback(null, to_array, message);
+	                var res = response.body;
+	                var shops = res.results.shop;
+
+	                if (shops) {
+	                    (function () {
+	                        console.log('shopIndex:::0');
+	                        client.set('shopIndex', '0', redis.print);
+
+	                        var i = 0;
+	                        shops.forEach(function () {
+	                            var shopJ = JSON.stringify(shops[i]);
+	                            client.set('shop' + i, shopJ, redis.print);
+	                            i++;
+	                        });
+
+	                        result = {
+	                            name: shops[0].name,
+	                            shop_num: i,
+	                            shop_image1: shops[0].photo.mobile.l,
+	                            address: shops[0].address,
+	                            latitude: shops[0].lat,
+	                            longitude: shops[0].lng,
+	                            opentime: shops[0].open
+	                        };
+
+	                        var text = i + '店見つかりました！\nこちらはいかがですかに？\n【お店】' + result.name + '\n【営業時間】' + result.opentime;
+	                        var imageArray = [];
+	                        imageArray.push(result.shop_image1);
+	                        var location = {
+	                            name: result.name,
+	                            title: result.address,
+	                            lat: Number(result.latitude),
+	                            lng: Number(result.longitude)
+	                        };
+	                        message = util.textImageLocation(text, imageArray, location);
+	                    })();
+	                } else {
+	                    message = util.message('見つからないかに…');
+	                }
+
+	                callback(null, to_array, message);
+	            }();
+
+	            if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
 	        } catch (e) {
 	            callback(e);
 	        }
