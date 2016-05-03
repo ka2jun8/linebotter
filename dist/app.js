@@ -1085,7 +1085,7 @@
 	            //TODO 語尾をかえる？
 	            var tmp = utt.substring(0, utt.length - 1);
 	            var last = utt.substring(utt.length - 1);
-	            if (last === ' ') {
+	            if (last === ' ' || last === '笑') {
 	                utt = tmp;
 	            } else if (last === '。' || last === '！' || last === '？') {
 	                utt = tmp + 'かに' + last;
@@ -1170,12 +1170,11 @@
 	                'contentType': 7,
 	                'text': result.name,
 	                'location': {
-	                    'title': result.title,
+	                    'title': result.name,
 	                    'latitude': Number(result.lat),
 	                    'longitude': Number(result.lng)
 	                }
 	            }];
-	            console.log('kani:::' + JSON.stringify(message) + '/' + to_array[0]);
 	        } else {
 	            message = util.message('見つからないかに…');
 	        }
@@ -1401,13 +1400,13 @@
 	        };
 
 	        logger.log(logger.type.INFO, 'weatherMessage: query:' + JSON.stringify(query));
+
 	        request.get(options, function (error, response /*, body*/) {
 	            try {
 	                var xml = response.body;
 	                var _json = xml2json.toJson(xml);
 	                var obj = JSON.parse(_json);
 	                var weathers = obj.YDF.Feature.Property.WeatherList.Weather;
-	                console.log(JSON.stringify(weathers));
 	                var rainfall = Number(weathers[0].Rainfall) * 100;
 
 	                var message = [];

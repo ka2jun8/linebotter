@@ -50,13 +50,13 @@ function weatherMessage(wpoint, to_array, callback) {
         };
 
         logger.log(logger.type.INFO, 'weatherMessage: query:'+JSON.stringify(query));
+
         request.get(options, function (error, response /*, body*/) {
             try { 
                 const xml = response.body;
                 const _json = xml2json.toJson(xml);
                 const obj = JSON.parse(_json);
                 const weathers = obj.YDF.Feature.Property.WeatherList.Weather;
-                console.log(JSON.stringify(weathers));
                 const rainfall = Number(weathers[0].Rainfall)*100;
                 
                 let message = [];

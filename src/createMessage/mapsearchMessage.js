@@ -34,13 +34,12 @@ function mapsearchMessage(option, to_array, callback){
                     'contentType':7,
                     'text': result.name,
                     'location':{
-                        'title': result.title,
+                        'title': result.name,
                         'latitude': Number(result.lat),
                         'longitude': Number(result.lng)
                     }
                 }
             ];
-            console.log('kani:::'+JSON.stringify(message)+'/'+to_array[0]);            
         }else {
             message = util.message('見つからないかに…');
         }
