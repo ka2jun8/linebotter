@@ -75,6 +75,7 @@ function dispatcher(args, callback){
         }
         //////////マップ////////////
         else if(type.key===util.TALKTYPE.GMAP.WHERE.key){
+            args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
             if(typeof args.option.maptarget!=='undefined'){
                 mapsearch({to:args.option.maptarget}, args.to_array, callback);
             }
@@ -83,6 +84,7 @@ function dispatcher(args, callback){
             }
         }
         else if(type.key===util.TALKTYPE.GMAP.GOTO.key){
+            args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
             if(typeof args.option.goto!=='undefined'){
                 args.next = util.TALKTYPE.GMAP.GOTO;
                 transit({to:args.option.goto}, args.to_array, callback);

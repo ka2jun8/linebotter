@@ -841,12 +841,14 @@
 	                        }
 	                        //////////マップ////////////
 	                        else if (type.key === util.TALKTYPE.GMAP.WHERE.key) {
+	                                args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
 	                                if (typeof args.option.maptarget !== 'undefined') {
 	                                    mapsearch({ to: args.option.maptarget }, args.to_array, callback);
 	                                } else {
 	                                    plain(util.message('行けると良いかにね'), args, callback);
 	                                }
 	                            } else if (type.key === util.TALKTYPE.GMAP.GOTO.key) {
+	                                args.client.set('talktype', JSON.stringify(util.TALKTYPE.OTHER), redis.print);
 	                                if (typeof args.option.goto !== 'undefined') {
 	                                    args.next = util.TALKTYPE.GMAP.GOTO;
 	                                    transit({ to: args.option.goto }, args.to_array, callback);
@@ -884,8 +886,6 @@
 
 	'use strict';
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
 	var request = __webpack_require__(6);
 	var logger = __webpack_require__(10);
 	var util = __webpack_require__(9);
@@ -895,7 +895,30 @@
 	function hotpepperMessage(option, client, to_array, callback) {
 	    var message = [];
 
-	    console.log('kanikani:::option?:' + JSON.stringify(option));
+	    var setShop = function setShop(shop) {
+	        console.log('shop?' + JSON.stringify(shop));
+	        return {
+	            name: shop.name,
+	            shop_image1: shop.photo.mobile.l,
+	            address: shop.address,
+	            latitude: shop.lat,
+	            longitude: shop.lng,
+	            opentime: shop.open,
+	            url: shop.urls.mobile
+	        };
+	    };
+	    var setMessage = function setMessage(result) {
+	        return {
+	            text: 'こちらはいかがですかに？\n【お店】' + result.name + '\n【営業時間】' + result.opentime + '\n URL:' + result.url,
+	            imageArray: [result.shop_image1],
+	            location: {
+	                name: result.name,
+	                title: result.address,
+	                lat: Number(result.latitude),
+	                lng: Number(result.longitude)
+	            }
+	        };
+	    };
 
 	    //"他には？" なのでshopsから返す
 	    if (option.other) {
@@ -907,25 +930,9 @@
 
 	                    if (shop) {
 	                        client.set('shopIndex', index, redis.print);
-	                        result = {
-	                            name: shop.name,
-	                            shop_image1: shop.photo.mobile.l,
-	                            address: shop.address,
-	                            latitude: shop.lat,
-	                            longitude: shop.lng,
-	                            opentime: shop.open
-	                        };
-
-	                        var text = 'こちらはいかがですかに？\n【お店】' + result.name + '\n【営業時間】' + result.opentime;
-	                        var imageArray = [];
-	                        imageArray.push(result.shop_image1);
-	                        var _location = {
-	                            name: result.name,
-	                            title: result.address,
-	                            lat: Number(result.latitude),
-	                            lng: Number(result.longitude)
-	                        };
-	                        message = util.textImageLocation(text, imageArray, _location);
+	                        var result = setShop(shop);
+	                        var mObj = setMessage(result);
+	                        message = util.textImageLocation(mObj.text, mObj.imageArray, mObj.location);
 	                    } else {
 	                        message = util.message('見つからないかに…');
 	                    }
@@ -934,107 +941,76 @@
 	                });
 	            });
 	        } catch (e) {
-	            message = util.message('見つからないかに…');
-	            callback(null, to_array, message);
+	            callback('エラーかに…' + e);
 	        }
-	        return;
 	    }
 
-	    // Hotpepper レストラン検索API
-	    var url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
-	    //logger.log(logger.type.INFO, 'hpepper: ' + process.env.HP_KEY);
+	    //初回検索時
+	    else {
+	            (function () {
 
-	    var keys = option.gkey;
-	    var location = option.location;
+	                // Hotpepper レストラン検索API
+	                var url = 'http://webservice.recruit.co.jp/hotpepper/gourmet/v1/';
+	                //logger.log(logger.type.INFO, 'hpepper: ' + process.env.HP_KEY);
 
-	    // HotPepper リクエストパラメータの設定
-	    var query = {
-	        'key': process.env.HP_KEY,
-	        'format': 'json'
-	    };
+	                var keys = option.gkey;
+	                var location = option.location;
 
-	    if (typeof keys !== 'undefined') {
-	        logger.log(logger.type.INFO, 'hMessage: keywords ' + keys);
-	        query.keyword = keys;
-	    } else if (typeof location !== 'undefined') {
-	        query.lat = location.latitude;
-	        query.lng = location.longitude;
-	    }
+	                // HotPepper リクエストパラメータの設定
+	                var query = {
+	                    'key': process.env.HP_KEY,
+	                    'format': 'json'
+	                };
 
-	    var options = {
-	        url: url,
-	        //proxy: process.env.PROXY,
-	        headers: { 'Content-Type': 'application/json; charset=UTF-8' },
-	        qs: query,
-	        json: true
-	    };
+	                if (typeof keys !== 'undefined') {
+	                    logger.log(logger.type.INFO, 'hMessage: keywords ' + keys);
+	                    query.keyword = keys;
+	                } else if (typeof location !== 'undefined') {
+	                    query.lat = location.latitude;
+	                    query.lng = location.longitude;
+	                }
 
-	    // 検索結果をオブジェクト化
-	    var result = {};
+	                var options = {
+	                    url: url,
+	                    //proxy: process.env.PROXY,
+	                    headers: { 'Content-Type': 'application/json; charset=UTF-8' },
+	                    qs: query,
+	                    json: true
+	                };
 
-	    request.get(options, function (error, response, body) {
-	        try {
-	            var _ret = function () {
-	                //console.log(JSON.stringify(body));
-	                if (!error && response.statusCode == 200) {
-	                    if ('error' in body) {
-	                        logger.log(logger.type.ERROR, 'hMessage: 検索エラー' + JSON.stringify(body));
-	                        var errms = util.message('見つからないかに…');
-	                        callback(null, to_array, errms);
-	                        return {
-	                            v: void 0
-	                        };
+	                // 検索結果をオブジェクト化
+	                var result = {};
+
+	                request.get(options, function (error, response, body) {
+	                    try {
+	                        //console.log(JSON.stringify(body));
+	                        if (!error && response.statusCode == 200) {
+	                            if ('error' in body) {
+	                                logger.log(logger.type.ERROR, 'hMessage: 検索エラー' + JSON.stringify(body));
+	                                var errms = util.message('見つからないかに…');
+	                                callback(null, to_array, errms);
+	                                return;
+	                            }
+	                        }
+
+	                        var res = response.body;
+	                        var shops = res.results.shop;
+
+	                        if (shops) {
+	                            result = setShop(shops[0]);
+	                            var mObj = setMessage(result);
+	                            message = util.textImageLocation(mObj.text, mObj.imageArray, mObj.location);
+	                        } else {
+	                            message = util.message('見つからないかに…');
+	                        }
+
+	                        callback(null, to_array, message);
+	                    } catch (e) {
+	                        callback(e);
 	                    }
-	                }
-
-	                var res = response.body;
-	                var shops = res.results.shop;
-
-	                if (shops) {
-	                    (function () {
-	                        console.log('shopIndex:::0');
-	                        client.set('shopIndex', '0', redis.print);
-
-	                        var i = 0;
-	                        shops.forEach(function () {
-	                            var shopJ = JSON.stringify(shops[i]);
-	                            client.set('shop' + i, shopJ, redis.print);
-	                            i++;
-	                        });
-
-	                        result = {
-	                            name: shops[0].name,
-	                            shop_num: i,
-	                            shop_image1: shops[0].photo.mobile.l,
-	                            address: shops[0].address,
-	                            latitude: shops[0].lat,
-	                            longitude: shops[0].lng,
-	                            opentime: shops[0].open
-	                        };
-
-	                        var text = i + '店見つかりました！\nこちらはいかがですかに？\n【お店】' + result.name + '\n【営業時間】' + result.opentime;
-	                        var imageArray = [];
-	                        imageArray.push(result.shop_image1);
-	                        var location = {
-	                            name: result.name,
-	                            title: result.address,
-	                            lat: Number(result.latitude),
-	                            lng: Number(result.longitude)
-	                        };
-	                        message = util.textImageLocation(text, imageArray, location);
-	                    })();
-	                } else {
-	                    message = util.message('見つからないかに…');
-	                }
-
-	                callback(null, to_array, message);
-	            }();
-
-	            if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
-	        } catch (e) {
-	            callback(e);
+	                });
+	            })();
 	        }
-	    });
 	}
 
 	module.exports = hotpepperMessage;
