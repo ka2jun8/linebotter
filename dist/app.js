@@ -84,6 +84,7 @@
 	//アラーム時間差で
 	//〜って何？ で辞書検索
 	//〜の英語 で英辞書検索
+	//ヘルプ
 
 	//test
 	app.get('/', function (req, res) {
@@ -530,7 +531,7 @@
 	            },
 	            GOTO: {
 	                key: '5-2',
-	                value: ['いきかた', '行き方', '\^\.\+から\.\+まで\$']
+	                value: ['\^\.\+から\.\+まで\$']
 	            }
 	        },
 	        WEATHER: {
@@ -1410,7 +1411,7 @@
 	                var rainfall = Number(weathers[0].Rainfall) * 100;
 
 	                var message = [];
-	                var text = location.name + '近辺の現在の降水強度は、' + rainfall + '%かに\n ※降水強度（単位：mm/h）';
+	                var text = location.name + '近辺の現在の降水確率は、' + rainfall + '%かに\n ※降水強度（単位：mm/h）';
 
 	                message = util.message(text);
 

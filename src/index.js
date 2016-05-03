@@ -36,6 +36,7 @@ app.use(bodyParser.json());                        // JSONのパースを楽に�
 //アラーム時間差で
 //〜って何？ で辞書検索
 //〜の英語 で英辞書検索
+//ヘルプ
 
 //test
 app.get('/', function(req, res) {

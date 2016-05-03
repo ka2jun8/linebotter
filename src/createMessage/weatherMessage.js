@@ -60,7 +60,7 @@ function weatherMessage(wpoint, to_array, callback) {
                 const rainfall = Number(weathers[0].Rainfall)*100;
                 
                 let message = [];
-                let text = location.name+'近辺の現在の降水強度は、'+rainfall+'%かに\n ※降水強度（単位：mm/h）';
+                let text = location.name+'近辺の現在の降水確率は、'+rainfall+'%かに\n ※降水強度（単位：mm/h）';
                 
                 message = util.message(text); 
 
