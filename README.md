@@ -10,8 +10,13 @@ gulp
 
 実行時
 ```js
+redis-server /your/path/redis.conf &
 nf start
 ```
+
+* !注意
+* redisを利用
+* nfは、nodeの環境変数（トークン）を参照するためのもの
 
 ローカル環境でテストするときは、以下を叩く
 
